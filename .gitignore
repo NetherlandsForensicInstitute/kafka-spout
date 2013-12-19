@@ -1,0 +1,8 @@
+# IDE files
+.idea/
+*.iml
+.project
+
+# maven-specific files
+target/
+
