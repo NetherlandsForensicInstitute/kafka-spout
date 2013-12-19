@@ -65,7 +65,7 @@ public class KafkaSpoutBufferBehaviourTest {
         final ConsumerIterator<byte[], byte[]> iterator = mock(ConsumerIterator.class);
         // make the iterator indicate a next message available once
         when(iterator.hasNext()).thenReturn(true).thenReturn(false);
-        when(iterator.next()).thenReturn(new MessageAndMetadata<>(
+        when(iterator.next()).thenReturn(new MessageAndMetadata<byte[], byte[]>(
             new byte[0],
             new byte[0],
             "test-topic",

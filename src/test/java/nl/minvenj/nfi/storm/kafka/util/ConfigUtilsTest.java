@@ -216,7 +216,7 @@ public class ConfigUtilsTest {
             createFailHandlerFromString("net.example.AbstractClassThatDoesNotActuallyExistImplFactory");
         }
         catch (final IllegalArgumentException e) {
-            assertTrue(e.getCause() instanceof ReflectiveOperationException);
+            assertTrue(e.getCause() instanceof ClassNotFoundException);
         }
 
         try {
