@@ -84,13 +84,13 @@ public class KafkaSpout implements IRichSpout {
      *
      * @see #fillBuffer()
      */
-    protected final SortedMap<KafkaMessageId, byte[]> _inProgress = new TreeMap<>();
+    protected final SortedMap<KafkaMessageId, byte[]> _inProgress = new TreeMap<KafkaMessageId, byte[]>();
     /**
      * Queue of messages waiting to be emitted by this spout.
      *
      * @see #fillBuffer()
      */
-    protected final Queue<KafkaMessageId> _queue = new LinkedList<>();
+    protected final Queue<KafkaMessageId> _queue = new LinkedList<KafkaMessageId>();
     protected String _topic;
     protected int _bufSize;
     protected ConsumerIterator<byte[], byte[]> _iterator;

@@ -93,21 +93,20 @@ public class ConfigUtils {
      * @throws IllegalArgumentException When the configuration file could not be found or another I/O error occurs.
      */
     public static Properties configFromResource(final String resource) {
-        try (final InputStream input = Thread.currentThread().getContextClassLoader().getResourceAsStream(resource)) {
-            final Properties config = new Properties();
-            // load configuration from classpath resource
-            if (input == null) {
-                // non-existent resource will *not* throw an exception, do this anyway
-                throw new IllegalArgumentException("configuration file '" + resource + "' not found on classpath");
-            }
-            // 'parse' config from input stream
-            config.load(input);
+        InputStream input = Thread.currentThread().getContextClassLoader().getResourceAsStream(resource);
+        if (input == null) {
+            // non-existent resource will *not* throw an exception, do this anyway
+            throw new IllegalArgumentException("configuration file '" + resource + "' not found on classpath");
+        }
 
-            return config;
+        final Properties config = new Properties();
+        try {
+            config.load(input);
         }
         catch (final IOException e) {
             throw new IllegalArgumentException("reading configuration from '" + resource + "' failed", e);
         }
+        return config;
     }
 
     /**
@@ -222,24 +221,32 @@ public class ConfigUtils {
      */
     public static FailHandler createFailHandlerFromString(final String failHandler) {
         // determine fail handler implementation from string value
-        switch (failHandler) {
-            case ReliableFailHandler.IDENTIFIER: {
-                return new ReliableFailHandler();
+        if (failHandler.equalsIgnoreCase(ReliableFailHandler.IDENTIFIER)) {
+            return new ReliableFailHandler();
+        }
+        else if (failHandler.equalsIgnoreCase(UnreliableFailHandler.IDENTIFIER)) {
+            return new UnreliableFailHandler();
+        }
+        else {
+            // create fail handler using parameter as identifier or class name
+            try {
+                return (FailHandler) Class.forName(failHandler).newInstance();
             }
-            case UnreliableFailHandler.IDENTIFIER: {
-                return new UnreliableFailHandler();
+            catch (final ClassNotFoundException e) {
+              throw new IllegalArgumentException("failed to instantiate FailHandler instance from argument " +
+                  failHandler, e);
             }
-            default: {
-                // create fail handler using parameter as identifier or class name
-                try {
-                    return (FailHandler) Class.forName(failHandler).newInstance();
-                }
-                catch (final ReflectiveOperationException e) {
-                    throw new IllegalArgumentException("failed to instantiate FailHandler instance from argument " + failHandler, e);
-                }
-                catch (final ClassCastException e) {
-                    throw new IllegalArgumentException("instance from argument " + failHandler + " does not implement FailHandler", e);
-                }
+            catch (final InstantiationException e) {
+              throw new IllegalArgumentException("failed to instantiate FailHandler instance from argument " +
+                  failHandler, e);
+            }
+            catch (final IllegalAccessException e) {
+              throw new IllegalArgumentException("failed to instantiate FailHandler instance from argument " +
+                  failHandler, e);
+            }
+            catch (final ClassCastException e) {
+                throw new IllegalArgumentException("instance from argument " + failHandler +
+                    " does not implement FailHandler", e);
             }
         }
     }
