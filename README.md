@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/HolmesNL/kafka-spout.png?branch=develop)](https://travis-ci.org/HolmesNL/kafka-spout)
+
 Kafka spout
 ===========
 Storm spout implementation reading messages from a kafka topic and emits these as single field tuples into a storm topology.
