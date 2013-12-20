@@ -235,14 +235,32 @@ public class ConfigUtilsTest {
         try {
             // class cannot be loaded, should yield nested ClassNotFoundException
             createFailHandlerFromString("net.example.AbstractClassThatDoesNotActuallyExistImplFactory");
+            fail("created fail handler from non-existing class name");
         }
         catch (final IllegalArgumentException e) {
             assertTrue(e.getCause() instanceof ClassNotFoundException);
         }
 
         try {
+            // class cannot be instantiated
+            createFailHandlerFromString(FailHandler.class.getName());
+            fail("created fail handler from interface only");
+        }
+        catch (final IllegalArgumentException e) {
+            assertTrue(e.getCause() instanceof InstantiationException);
+        }
+
+        try {
+            createFailHandlerFromString(PrivateFailHandler.class.getName());
+            fail("created fail handler from broken test class");
+        } catch (final IllegalArgumentException e) {
+            assertTrue(e.getCause() instanceof IllegalAccessException);
+        }
+
+        try {
             // class cannot be cast to FailHandler, should yield nested ClassCastException
             createFailHandlerFromString(ConfigUtilsTest.class.getName());
+            fail("created fail handler from class not implementing FailHandler");
         }
         catch (final IllegalArgumentException e) {
             assertTrue(e.getCause() instanceof ClassCastException);
@@ -291,6 +309,24 @@ public class ConfigUtilsTest {
     protected static class TestFailHandler extends AbstractFailHandler {
         @Override
         public boolean shouldReplay(final KafkaMessageId id) {
+            return false;
+        }
+
+        @Override
+        public String getIdentifier() {
+            return "test";
+        }
+    }
+
+    /**
+     * Broken implementation of FailHandler (private constructor should break instantiation through reflection).
+     */
+    protected static class PrivateFailHandler extends AbstractFailHandler {
+        private PrivateFailHandler() {
+        }
+
+        @Override
+        public boolean shouldReplay(KafkaMessageId id) {
             return false;
         }
 
