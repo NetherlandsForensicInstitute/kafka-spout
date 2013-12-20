@@ -16,27 +16,12 @@
 
 package nl.minvenj.nfi.storm.kafka.util;
 
-import static nl.minvenj.nfi.storm.kafka.util.ConfigUtils.CONFIG_TOPIC;
-import static nl.minvenj.nfi.storm.kafka.util.ConfigUtils.DEFAULT_TOPIC;
-import static nl.minvenj.nfi.storm.kafka.util.ConfigUtils.getMaxBufSize;
-import static nl.minvenj.nfi.storm.kafka.util.ConfigUtils.getTopic;
-import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
-import static nl.minvenj.nfi.storm.kafka.util.ConfigUtils.CONFIG_BUFFER_MAX_MESSAGES;
-import static nl.minvenj.nfi.storm.kafka.util.ConfigUtils.CONFIG_FILE;
-import static nl.minvenj.nfi.storm.kafka.util.ConfigUtils.DEFAULT_BUFFER_MAX_MESSAGES;
-import static nl.minvenj.nfi.storm.kafka.util.ConfigUtils.checkConfigSanity;
-import static nl.minvenj.nfi.storm.kafka.util.ConfigUtils.configFromPrefix;
-import static nl.minvenj.nfi.storm.kafka.util.ConfigUtils.configFromResource;
-import static nl.minvenj.nfi.storm.kafka.util.ConfigUtils.createFailHandlerFromString;
-import static nl.minvenj.nfi.storm.kafka.util.ConfigUtils.createKafkaConfig;
-import static nl.minvenj.nfi.storm.kafka.util.ConfigUtils.getStormZookeepers;
+import backtype.storm.Config;
+import nl.minvenj.nfi.storm.kafka.fail.AbstractFailHandler;
+import nl.minvenj.nfi.storm.kafka.fail.FailHandler;
+import nl.minvenj.nfi.storm.kafka.fail.ReliableFailHandler;
+import nl.minvenj.nfi.storm.kafka.fail.UnreliableFailHandler;
+import org.junit.Test;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -44,13 +29,27 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 
-import org.junit.Test;
-
-import backtype.storm.Config;
-import nl.minvenj.nfi.storm.kafka.fail.AbstractFailHandler;
-import nl.minvenj.nfi.storm.kafka.fail.FailHandler;
-import nl.minvenj.nfi.storm.kafka.fail.ReliableFailHandler;
-import nl.minvenj.nfi.storm.kafka.fail.UnreliableFailHandler;
+import static nl.minvenj.nfi.storm.kafka.util.ConfigUtils.CONFIG_BUFFER_MAX_MESSAGES;
+import static nl.minvenj.nfi.storm.kafka.util.ConfigUtils.CONFIG_FILE;
+import static nl.minvenj.nfi.storm.kafka.util.ConfigUtils.CONFIG_TOPIC;
+import static nl.minvenj.nfi.storm.kafka.util.ConfigUtils.DEFAULT_BUFFER_MAX_MESSAGES;
+import static nl.minvenj.nfi.storm.kafka.util.ConfigUtils.DEFAULT_TOPIC;
+import static nl.minvenj.nfi.storm.kafka.util.ConfigUtils.checkConfigSanity;
+import static nl.minvenj.nfi.storm.kafka.util.ConfigUtils.configFromPrefix;
+import static nl.minvenj.nfi.storm.kafka.util.ConfigUtils.configFromResource;
+import static nl.minvenj.nfi.storm.kafka.util.ConfigUtils.createFailHandlerFromString;
+import static nl.minvenj.nfi.storm.kafka.util.ConfigUtils.createKafkaConfig;
+import static nl.minvenj.nfi.storm.kafka.util.ConfigUtils.getMaxBufSize;
+import static nl.minvenj.nfi.storm.kafka.util.ConfigUtils.getStormZookeepers;
+import static nl.minvenj.nfi.storm.kafka.util.ConfigUtils.getTopic;
+import static org.hamcrest.Matchers.containsString;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 public class ConfigUtilsTest {
     @Test
@@ -86,6 +85,9 @@ public class ConfigUtilsTest {
         // assert existence of values for keys without the prefix
         assertEquals("non-existent.host:2181", config.getProperty("zookeeper.connect"));
         assertEquals("nonsense", config.getProperty("property.that.makes.little.sense"));
+
+        // assert that required keys have been added
+        assertEquals(config.getProperty("auto.commit.enable"), "false");
     }
 
     @Test
@@ -121,22 +123,41 @@ public class ConfigUtilsTest {
     public void testSanityCheckSuccess() {
         final Properties properties = new Properties();
         properties.setProperty("consumer.timeout.ms", "35");
+        properties.setProperty("auto.commit.enable", "false");
 
         // check sanity (should not raise exception
         checkConfigSanity(properties);
     }
 
     @Test
-    public void testSanityCheckFailure() {
+    public void testSanityCheckFailureTimeout() {
         final Properties properties = new Properties();
         // set blocking operation of consumer
         properties.setProperty("consumer.timeout.ms", "-1");
+        // set valid value for auto-commit
+        properties.setProperty("auto.commit.enable", "false");
 
         try {
             checkConfigSanity(properties);
         }
         catch (final IllegalArgumentException e) {
             // this is expected, blocking consumer config should be rejected
+        }
+    }
+
+    @Test
+    public void testSanityCheckFailureAutoCommit() {
+        final Properties properties = new Properties();
+        // set auto-commit
+        properties.setProperty("auto.commit.enable", "true");
+        // set valid value for timeout
+        properties.setProperty("consumer.timeout.ms", "35");
+
+        try {
+            checkConfigSanity(properties);
+        }
+        catch (final IllegalArgumentException e) {
+            // this is expected, auto-committing config should be rejected
         }
     }
 

@@ -155,6 +155,11 @@ public class ConfigUtils {
             }
         }
 
+        // auto-committing offsets to zookeeper should be disabled
+        if (!consumerConfig.containsKey("auto.commit.enable")) {
+            consumerConfig.setProperty("auto.commit.enable", "false");
+        }
+
         // check configuration sanity before returning
         checkConfigSanity(consumerConfig);
         return consumerConfig;
@@ -304,6 +309,12 @@ public class ConfigUtils {
      * @throws IllegalArgumentException When a sanity check fails.
      */
     public static void checkConfigSanity(final Properties config) {
+        // auto-committing offsets should be disabled
+        final Object autoCommit = config.getProperty("auto.commit.enable");
+        if (autoCommit == null || Boolean.parseBoolean(String.valueOf(autoCommit))) {
+            throw new IllegalArgumentException("kafka configuration 'auto.commit.enable' should be set to false for operation in storm");
+        }
+
         // consumer timeout should not block calls indefinitely
         final Object consumerTimeout = config.getProperty("consumer.timeout.ms");
         if (consumerTimeout == null || Integer.parseInt(String.valueOf(consumerTimeout)) < 0) {
