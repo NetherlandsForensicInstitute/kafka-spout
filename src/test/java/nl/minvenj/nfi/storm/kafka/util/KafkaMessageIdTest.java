@@ -97,7 +97,7 @@ public class KafkaMessageIdTest {
             new KafkaMessageId(1, 12345),
             new KafkaMessageId(1, 9876543210L)
         );
-        final SortedSet<KafkaMessageId> subject = new TreeSet<>(ids);
+        final SortedSet<KafkaMessageId> subject = new TreeSet<KafkaMessageId>(ids);
 
         // test the behaviour of a sorted set of message ids is as expected
         assertEquals(10, subject.size()); // ids.size() - 1; a single duplicate was inserted

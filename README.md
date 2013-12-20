@@ -11,6 +11,10 @@ This implementation was created by the Netherlands Forensic Institute and is sti
 The project was tested with kafka_2.10 version **0.8.0beta1** and storm version **0.9.0rc3**.
 Contributions are welcome, please read [the contribution guidelines](./CONTRIBUTING.md).
 
+Java versions
+-------------
+The code is compatible with both Java 6 and Java 7.
+
 License
 -------
 This work is licensed under the Apache License, Version 2.0.
