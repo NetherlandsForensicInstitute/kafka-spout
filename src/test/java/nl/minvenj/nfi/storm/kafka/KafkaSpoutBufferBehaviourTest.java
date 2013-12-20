@@ -22,6 +22,7 @@ import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -32,6 +33,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.SortedMap;
 
 import org.junit.Before;
 import org.junit.Ignore;
@@ -195,6 +197,11 @@ public class KafkaSpoutBufferBehaviourTest {
         // verify that the buffer is still empty and the key is no longer in pending
         assertTrue(_subject._queue.isEmpty());
         assertFalse(_subject._inProgress.containsKey(id));
+
+        // verify that a non-KafkaMessageId argument is ignored
+        final SortedMap<KafkaMessageId, byte[]> spy = spy(_subject._inProgress);
+        _subject.ack(new Object());
+        verifyNoMoreInteractions(spy);
     }
 
     @Test
@@ -217,5 +224,10 @@ public class KafkaSpoutBufferBehaviourTest {
         // verify that the buffer is once again empty and the id has been emitted twice
         assertTrue(_subject._queue.isEmpty());
         verify(_subject._collector, times(2)).emit(any(Values.class), eq(id));
+
+        // verify that a non-KafkaMessageId argument is ignored
+        final SortedMap<KafkaMessageId, byte[]> spy = spy(_subject._inProgress);
+        _subject.fail(new Object());
+        verifyNoMoreInteractions(spy);
     }
 }
