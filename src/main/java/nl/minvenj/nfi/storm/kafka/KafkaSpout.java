@@ -36,6 +36,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import backtype.storm.metric.api.AssignableMetric;
+import backtype.storm.metric.api.CountMetric;
 import backtype.storm.spout.SpoutOutputCollector;
 import backtype.storm.task.TopologyContext;
 import backtype.storm.topology.IRichSpout;
@@ -86,6 +87,14 @@ public class KafkaSpout implements IRichSpout {
      * Default buffer load metric interval.
      */
     public static final int METRIC_BUFFER_INTERVAL = 1;
+    /**
+     * Metric name exposing the number of message bytes consumed from kafka and emitted to the topology.
+     */
+    public static final String METRIC_EMITTED_BYTES = "emitted_bytes";
+    /**
+     * Default emitted bytes metric interval.
+     */
+    public static final int METRIC_BYTES_INTERVAL = 1;
     private static final long serialVersionUID = -1L;
     private static final Logger LOG = LoggerFactory.getLogger(KafkaSpout.class);
     /**
@@ -109,6 +118,7 @@ public class KafkaSpout implements IRichSpout {
     protected transient ConsumerConnector _consumer;
     // metrics exposed to storm topology context
     protected transient AssignableMetric _bufferLoadMetric;
+    protected transient CountMetric _emittedBytesMetric;
 
     /**
      * Creates a new kafka spout to be submitted in a storm topology. Configuration is read from storm config when the
@@ -207,8 +217,10 @@ public class KafkaSpout implements IRichSpout {
     protected void registerMetrics(final TopologyContext topology) {
         // initialize buffer load to 0.0 (getValueAndReset won't set it back to 0.0)
         _bufferLoadMetric = new AssignableMetric(0.0);
+        _emittedBytesMetric = new CountMetric();
 
         topology.registerMetric(METRIC_BUFFER_LOAD, _bufferLoadMetric, METRIC_BUFFER_INTERVAL);
+        topology.registerMetric(METRIC_EMITTED_BYTES, _emittedBytesMetric, METRIC_BYTES_INTERVAL);
     }
 
     @Override
@@ -286,6 +298,9 @@ public class KafkaSpout implements IRichSpout {
                 }
                 // message should be considered a single object from Values' point of view
                 _collector.emit(new Values((Object) message), nextId);
+                if (_emittedBytesMetric != null) {
+                    _emittedBytesMetric.incrBy(message.length);
+                }
                 LOG.debug("emitted kafka message id {} ({} bytes payload)", nextId, message.length);
             }
         }

@@ -44,6 +44,7 @@ import org.junit.Test;
 import org.mockito.ArgumentMatcher;
 
 import backtype.storm.metric.api.AssignableMetric;
+import backtype.storm.metric.api.CountMetric;
 import backtype.storm.spout.SpoutOutputCollector;
 import backtype.storm.topology.OutputFieldsDeclarer;
 import backtype.storm.tuple.Fields;
@@ -243,6 +244,20 @@ public class KafkaSpoutBufferBehaviourTest {
         catch (final IllegalStateException e) {
             assertThat(e.getMessage(), containsString(id.toString()));
         }
+    }
+
+    @Test
+    public void testEmittedBytesMetric() {
+        // NB: update the consumer mock for this test to return the single message stream
+        when(_consumer.createMessageStreams(any(Map.class))).thenReturn(_stream);
+        _subject._emittedBytesMetric = new CountMetric();
+
+        final long originalTotal = (Long) _subject._emittedBytesMetric.getValueAndReset();
+        assertEquals(originalTotal, 0);
+
+        // emit the single 4-byte message in the stream and verify the counter has been incremented
+        _subject.nextTuple();
+        assertEquals(4, ((Long) _subject._emittedBytesMetric.getValueAndReset()).longValue());
     }
 
     @Test
