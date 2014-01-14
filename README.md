@@ -1,4 +1,5 @@
-[![Build Status](https://travis-ci.org/HolmesNL/kafka-spout.png?branch=develop)](https://travis-ci.org/HolmesNL/kafka-spout)
+[![Build Status (development branch)](https://travis-ci.org/HolmesNL/kafka-spout.png?branch=develop)](https://travis-ci.org/HolmesNL/kafka-spout)
+[![Coverage Status (development branch)](https://coveralls.io/repos/HolmesNL/kafka-spout/badge.png?branch=develop)](https://coveralls.io/r/HolmesNL/kafka-spout?branch=develop)
 
 Kafka spout
 ===========
