@@ -35,6 +35,7 @@ import java.util.TreeMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import backtype.storm.metric.api.AssignableMetric;
 import backtype.storm.spout.SpoutOutputCollector;
 import backtype.storm.task.TopologyContext;
 import backtype.storm.topology.IRichSpout;
@@ -76,6 +77,15 @@ import nl.minvenj.nfi.storm.kafka.util.KafkaMessageId;
  * @author Netherlands Forensics Institute
  */
 public class KafkaSpout implements IRichSpout {
+    /**
+     * Metric name exposing the current buffer load of the spout. Buffer load is expressed as number between 0.0
+     * (buffer was empty after (re)filling it) and 1.0 (buffer was full after (re)filling it).
+     */
+    public static final String METRIC_BUFFER_LOAD = "buffer_load";
+    /**
+     * Default buffer load metric interval.
+     */
+    public static final int METRIC_BUFFER_INTERVAL = 1;
     private static final long serialVersionUID = -1L;
     private static final Logger LOG = LoggerFactory.getLogger(KafkaSpout.class);
     /**
@@ -97,6 +107,8 @@ public class KafkaSpout implements IRichSpout {
     protected ConsumerIterator<byte[], byte[]> _iterator;
     protected transient SpoutOutputCollector _collector;
     protected transient ConsumerConnector _consumer;
+    // metrics exposed to storm topology context
+    protected transient AssignableMetric _bufferLoadMetric;
 
     /**
      * Creates a new kafka spout to be submitted in a storm topology. Configuration is read from storm config when the
@@ -169,6 +181,11 @@ public class KafkaSpout implements IRichSpout {
             // timeout does *not* mean that no messages were read (state is checked below)
         }
 
+        if (_bufferLoadMetric != null) {
+            // set value for buffer load (0.0 = empty, 1.0 = full)
+            _bufferLoadMetric.setValue(((double) _inProgress.size()) / _bufSize);
+        }
+
         if (_inProgress.size() > 0) {
             // set _queue to all currently pending kafka message ids
             _queue.addAll(_inProgress.keySet());
@@ -180,6 +197,18 @@ public class KafkaSpout implements IRichSpout {
             // no messages appended to buffer
             return false;
         }
+    }
+
+    /**
+     * Initializes instance metric instances and registers them to the provided {@link TopologyContext}.
+     *
+     * @param topology The {@link TopologyContext} to register metrics on.
+     */
+    protected void registerMetrics(final TopologyContext topology) {
+        // initialize buffer load to 0.0 (getValueAndReset won't set it back to 0.0)
+        _bufferLoadMetric = new AssignableMetric(0.0);
+
+        topology.registerMetric(METRIC_BUFFER_LOAD, _bufferLoadMetric, METRIC_BUFFER_INTERVAL);
     }
 
     @Override
@@ -210,6 +239,9 @@ public class KafkaSpout implements IRichSpout {
         _failHandler.open(config, topology, collector);
 
         LOG.info("kafka spout opened, reading from topic {}, using failure policy {}", _topic, _failHandler.getIdentifier());
+
+        // create and register metrics for the current topology
+        registerMetrics(topology);
     }
 
     @Override
