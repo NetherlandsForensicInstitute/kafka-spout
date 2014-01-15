@@ -16,9 +16,12 @@
 
 package nl.minvenj.nfi.storm.kafka;
 
+import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
@@ -36,7 +39,6 @@ import java.util.NoSuchElementException;
 import java.util.SortedMap;
 
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import backtype.storm.spout.SpoutOutputCollector;
@@ -180,6 +182,21 @@ public class KafkaSpoutBufferBehaviourTest {
         // subject should have emitted only the first message
         verify(_subject._collector).emit(eq(new Values(message1)), eq(id1));
         verifyNoMoreInteractions(_subject._collector);
+    }
+
+    @Test
+    public void testIllegalQueueState() {
+        // queue a single id with no corresponding message
+        final KafkaMessageId id = new KafkaMessageId(1, 1234);
+        _subject._queue.add(id);
+
+        try {
+            _subject.nextTuple();
+            fail("illegal queue state didn't trigger error");
+        }
+        catch (final IllegalStateException e) {
+            assertThat(e.getMessage(), containsString(id.toString()));
+        }
     }
 
     @Test
