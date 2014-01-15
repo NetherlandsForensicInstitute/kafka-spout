@@ -35,7 +35,6 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.NoSuchElementException;
 import java.util.SortedMap;
 
 import org.junit.Before;
@@ -44,6 +43,7 @@ import org.junit.Test;
 import backtype.storm.spout.SpoutOutputCollector;
 import backtype.storm.tuple.Values;
 import kafka.consumer.ConsumerIterator;
+import kafka.consumer.ConsumerTimeoutException;
 import kafka.consumer.KafkaStream;
 import kafka.javaapi.consumer.ConsumerConnector;
 import kafka.message.MessageAndMetadata;
@@ -68,14 +68,14 @@ public class KafkaSpoutBufferBehaviourTest {
         final KafkaStream<byte[], byte[]> mockedStream = mock(KafkaStream.class);
         final ConsumerIterator<byte[], byte[]> iterator = mock(ConsumerIterator.class);
         // make the iterator indicate a next message available once
-        when(iterator.hasNext()).thenReturn(true).thenReturn(false);
+        when(iterator.hasNext()).thenReturn(true);
         when(iterator.next()).thenReturn(new MessageAndMetadata<byte[], byte[]>(
             new byte[0],
             new byte[0],
             "test-topic",
             1,
             1234
-        )).thenThrow(NoSuchElementException.class);
+        )).thenThrow(ConsumerTimeoutException.class);
         when(mockedStream.iterator()).thenReturn(iterator);
         put("test-topic", Arrays.asList(mockedStream));
     }};
