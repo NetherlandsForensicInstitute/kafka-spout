@@ -19,10 +19,12 @@ package nl.minvenj.nfi.storm.kafka;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.argThat;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
@@ -39,8 +41,11 @@ import java.util.SortedMap;
 
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.ArgumentMatcher;
 
 import backtype.storm.spout.SpoutOutputCollector;
+import backtype.storm.topology.OutputFieldsDeclarer;
+import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Values;
 import kafka.consumer.ConsumerIterator;
 import kafka.consumer.ConsumerTimeoutException;
@@ -101,6 +106,24 @@ public class KafkaSpoutBufferBehaviourTest {
         _subject._consumer = _consumer;
         // provide a mocked collector to be able to check for emitted values
         _subject._collector = mock(SpoutOutputCollector.class);
+    }
+
+    @Test
+    public void testDeclarations() {
+        final OutputFieldsDeclarer declarer = mock(OutputFieldsDeclarer.class);
+
+        _subject.declareOutputFields(declarer);
+        // verify the spout declares to output single-field tuples
+        verify(declarer).declare(argThat(new ArgumentMatcher<Fields>() {
+            @Override
+            public boolean matches(final Object argument) {
+                final Fields fields = (Fields) argument;
+                return fields.size() == 1 && fields.get(0).equals("bytes");
+            }
+        }));
+
+        // verify the spout will not provide component configuration
+        assertNull(_subject.getComponentConfiguration());
     }
 
     @Test

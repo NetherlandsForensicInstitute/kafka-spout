@@ -93,8 +93,8 @@ public class KafkaSpout implements IRichSpout {
     protected final Queue<KafkaMessageId> _queue = new LinkedList<KafkaMessageId>();
     protected String _topic;
     protected int _bufSize;
-    protected ConsumerIterator<byte[], byte[]> _iterator;
     protected FailHandler _failHandler;
+    protected ConsumerIterator<byte[], byte[]> _iterator;
     protected transient SpoutOutputCollector _collector;
     protected transient ConsumerConnector _consumer;
 
@@ -216,6 +216,7 @@ public class KafkaSpout implements IRichSpout {
     public void close() {
         // reset state by setting members to null
         _collector = null;
+        _iterator = null;
 
         if (_consumer != null) {
             try {
