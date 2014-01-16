@@ -144,14 +144,14 @@ public class ConfigUtils {
         }
 
         // group id string is critical, try to make sure it's present
-        if (!consumerConfig.containsKey("group.id")) {
+        if (!consumerConfig.containsKey("group.id") || String.valueOf(consumerConfig.get("group.id")).isEmpty()) {
             final Object groupId = config.get(CONFIG_GROUP);
-            if (groupId != null) {
+            if (groupId != null && !String.valueOf(groupId).isEmpty()) {
                 consumerConfig.setProperty("group.id", String.valueOf(groupId));
             }
             else {
                 consumerConfig.setProperty("group.id", DEFAULT_GROUP);
-                LOG.info("kafka consumer group id not configured, using default ({})", DEFAULT_GROUP);
+                LOG.info("kafka consumer group id not configured or empty, using default ({})", DEFAULT_GROUP);
             }
         }
 
@@ -238,16 +238,16 @@ public class ConfigUtils {
                 return (FailHandler) Class.forName(failHandler).newInstance();
             }
             catch (final ClassNotFoundException e) {
-              throw new IllegalArgumentException("failed to instantiate FailHandler instance from argument " +
-                  failHandler, e);
+                throw new IllegalArgumentException("failed to instantiate FailHandler instance from argument " +
+                    failHandler, e);
             }
             catch (final InstantiationException e) {
-              throw new IllegalArgumentException("failed to instantiate FailHandler instance from argument " +
-                  failHandler, e);
+                throw new IllegalArgumentException("failed to instantiate FailHandler instance from argument " +
+                    failHandler, e);
             }
             catch (final IllegalAccessException e) {
-              throw new IllegalArgumentException("failed to instantiate FailHandler instance from argument " +
-                  failHandler, e);
+                throw new IllegalArgumentException("failed to instantiate FailHandler instance from argument " +
+                    failHandler, e);
             }
             catch (final ClassCastException e) {
                 throw new IllegalArgumentException("instance from argument " + failHandler +
