@@ -43,8 +43,6 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentMatcher;
 
-import backtype.storm.metric.api.AssignableMetric;
-import backtype.storm.metric.api.CountMetric;
 import backtype.storm.spout.SpoutOutputCollector;
 import backtype.storm.topology.OutputFieldsDeclarer;
 import backtype.storm.tuple.Fields;
@@ -102,11 +100,11 @@ public class KafkaSpoutBufferBehaviourTest {
             // make the iterator indicate a next message available once
             when(iterator.hasNext()).thenReturn(true);
             when(iterator.next()).thenReturn(new MessageAndMetadata<byte[], byte[]>(
-                    new byte[0],
-                    new byte[0],
-                    "test-topic",
-                    1,
-                    1234
+                new byte[0],
+                new byte[]{1, 2, 3, 4},
+                "test-topic",
+                1,
+                1234
             )).thenThrow(ConsumerTimeoutException.class);
             when(mockedStream.iterator()).thenReturn(iterator);
             put("test-topic", Arrays.asList(mockedStream));
@@ -181,25 +179,6 @@ public class KafkaSpoutBufferBehaviourTest {
     }
 
     @Test
-    public void testBufferLoadMetric() {
-        // NB: update the consumer mock for this test to return the single message stream
-        when(_consumer.createMessageStreams(any(Map.class))).thenReturn(_stream);
-        _subject._bufferLoadMetric = new AssignableMetric(0.0);
-
-        final double originalLoad = (Double) _subject._bufferLoadMetric.getValueAndReset();
-        assertEquals(originalLoad, 0.0, 0.01);
-        // stream contains a single message, buffer size is 4, load should be 0.25
-        _subject.fillBuffer();
-        assertEquals(0.25, (Double) _subject._bufferLoadMetric.getValueAndReset(), 0.01);
-
-        _subject._inProgress.clear();
-        _subject._queue.clear();
-        // refill buffer, without messages in the stream should yield a load of 0.0
-        _subject.fillBuffer();
-        assertEquals(0.0, (Double) _subject._bufferLoadMetric.getValueAndReset(), 0.01);
-    }
-
-    @Test
     public void testEmitOnAvailable() {
         final KafkaMessageId id = new KafkaMessageId(1, 1234);
         final byte[] message = {5, 6, 7, 8};
@@ -244,20 +223,6 @@ public class KafkaSpoutBufferBehaviourTest {
         catch (final IllegalStateException e) {
             assertThat(e.getMessage(), containsString(id.toString()));
         }
-    }
-
-    @Test
-    public void testEmittedBytesMetric() {
-        // NB: update the consumer mock for this test to return the single message stream
-        when(_consumer.createMessageStreams(any(Map.class))).thenReturn(_stream);
-        _subject._emittedBytesMetric = new CountMetric();
-
-        final long originalTotal = (Long) _subject._emittedBytesMetric.getValueAndReset();
-        assertEquals(originalTotal, 0);
-
-        // emit the single 4-byte message in the stream and verify the counter has been incremented
-        _subject.nextTuple();
-        assertEquals(4, ((Long) _subject._emittedBytesMetric.getValueAndReset()).longValue());
     }
 
     @Test
