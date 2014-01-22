@@ -22,6 +22,7 @@ import kafka.consumer.KafkaStream;
 import kafka.javaapi.consumer.ConsumerConnector;
 import kafka.message.MessageAndMetadata;
 import nl.minvenj.nfi.storm.kafka.util.KafkaMessageId;
+import nl.minvenj.nfi.storm.kafka.util.metric.KafkaOffsetMetric;
 
 public class KafkaSpoutMetricsTest {
     private KafkaSpout _subject;
@@ -52,7 +53,7 @@ public class KafkaSpoutMetricsTest {
             when(iterator.hasNext()).thenReturn(true);
             when(iterator.next()).thenReturn(new MessageAndMetadata<byte[], byte[]>(
                 new byte[]{},
-                new byte[]{1, 2, 3, 4},
+                new byte[]{},
                 "test-topic",
                 1,
                 1234
@@ -97,5 +98,21 @@ public class KafkaSpoutMetricsTest {
         _subject.nextTuple();
         _subject.nextTuple();
         assertEquals(14, ((Long) _subject._emittedBytesMetric.getValueAndReset()).longValue());
+    }
+
+    @Test
+    public void testKafkaOffsetMetric() {
+        _subject._emittedOffsetsMetric = new KafkaOffsetMetric();
+
+        // emit all queued messages
+        _subject.nextTuple();
+        _subject.nextTuple();
+        _subject.nextTuple();
+
+        final Map<Integer, Long> value = _subject._emittedOffsetsMetric.getValueAndReset();
+        // verify two partitions
+        assertEquals(2, value.size());
+        assertEquals(1234L, (long) value.get(1));
+        assertEquals(12345L, (long) value.get(2));
     }
 }
