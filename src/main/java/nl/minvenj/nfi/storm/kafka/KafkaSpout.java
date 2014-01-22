@@ -53,6 +53,7 @@ import kafka.message.MessageAndMetadata;
 import nl.minvenj.nfi.storm.kafka.fail.FailHandler;
 import nl.minvenj.nfi.storm.kafka.util.ConfigUtils;
 import nl.minvenj.nfi.storm.kafka.util.KafkaMessageId;
+import nl.minvenj.nfi.storm.kafka.util.metric.KafkaOffsetMetric;
 
 /**
  * Storm spout reading messages from kafka, emitting them as single field tuples.
@@ -95,6 +96,14 @@ public class KafkaSpout implements IRichSpout {
      * Default emitted bytes metric interval.
      */
     public static final int METRIC_BYTES_INTERVAL = 1;
+    /**
+     * Metric name exposing the emitted offsets for each handled partition.
+     */
+    public static final String METRIC_OFFSETS = "emitted_offsets";
+    /**
+     * Default offsets metric interval.
+     */
+    public static final int METRIC_OFFSETS_INTERVAL = 60;
     private static final long serialVersionUID = -1L;
     private static final Logger LOG = LoggerFactory.getLogger(KafkaSpout.class);
     /**
@@ -119,6 +128,7 @@ public class KafkaSpout implements IRichSpout {
     // metrics exposed to storm topology context
     protected transient AssignableMetric _bufferLoadMetric;
     protected transient CountMetric _emittedBytesMetric;
+    protected transient KafkaOffsetMetric _emittedOffsetsMetric;
 
     /**
      * Creates a new kafka spout to be submitted in a storm topology. Configuration is read from storm config when the
@@ -218,9 +228,11 @@ public class KafkaSpout implements IRichSpout {
         // initialize buffer load to 0.0 (getValueAndReset won't set it back to 0.0)
         _bufferLoadMetric = new AssignableMetric(0.0);
         _emittedBytesMetric = new CountMetric();
+        _emittedOffsetsMetric = new KafkaOffsetMetric();
 
         topology.registerMetric(METRIC_BUFFER_LOAD, _bufferLoadMetric, METRIC_BUFFER_INTERVAL);
         topology.registerMetric(METRIC_EMITTED_BYTES, _emittedBytesMetric, METRIC_BYTES_INTERVAL);
+        topology.registerMetric(METRIC_OFFSETS, _emittedOffsetsMetric, METRIC_OFFSETS_INTERVAL);
     }
 
     @Override
@@ -301,6 +313,10 @@ public class KafkaSpout implements IRichSpout {
                 if (_emittedBytesMetric != null) {
                     _emittedBytesMetric.incrBy(message.length);
                 }
+                if (_emittedOffsetsMetric != null) {
+                    _emittedOffsetsMetric.update(nextId);
+                }
+
                 LOG.debug("emitted kafka message id {} ({} bytes payload)", nextId, message.length);
             }
         }
