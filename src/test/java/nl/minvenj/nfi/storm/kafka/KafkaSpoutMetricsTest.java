@@ -1,6 +1,12 @@
 package nl.minvenj.nfi.storm.kafka;
 
+import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThat;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -13,7 +19,6 @@ import java.util.Map;
 import org.junit.Before;
 import org.junit.Test;
 
-import backtype.storm.metric.api.AssignableMetric;
 import backtype.storm.metric.api.CountMetric;
 import backtype.storm.spout.SpoutOutputCollector;
 import kafka.consumer.ConsumerIterator;
@@ -23,6 +28,7 @@ import kafka.javaapi.consumer.ConsumerConnector;
 import kafka.message.MessageAndMetadata;
 import nl.minvenj.nfi.storm.kafka.util.KafkaMessageId;
 import nl.minvenj.nfi.storm.kafka.util.metric.KafkaOffsetMetric;
+import nl.minvenj.nfi.storm.kafka.util.metric.MultiAssignableMetric;
 
 public class KafkaSpoutMetricsTest {
     private KafkaSpout _subject;
@@ -67,25 +73,65 @@ public class KafkaSpoutMetricsTest {
 
     @Test
     public void testBufferLoadMetric() {
-        _subject._bufferLoadMetric = new AssignableMetric(0.0);
+        _subject._bufferStateMetric = new MultiAssignableMetric<Number>();
         _subject._queue.clear();
         _subject._inProgress.clear();
 
-        final double originalLoad = (Double) _subject._bufferLoadMetric.getValueAndReset();
-        assertEquals(originalLoad, 0.0, 0.01);
+        final Object originalLoad = _subject._bufferStateMetric.getValueAndReset().get(KafkaSpout.METRIC_BUFFER_LOAD);
+        assertNull(originalLoad);
         // stream contains a single message, buffer size is 4, load should be 0.25
         _subject.fillBuffer();
-        assertEquals(0.25, (Double) _subject._bufferLoadMetric.getValueAndReset(), 0.01);
+        assertEquals(0.25, (Double) _subject._bufferStateMetric.getValueAndReset().get(KafkaSpout.METRIC_BUFFER_LOAD), 0.01);
 
         _subject._inProgress.clear();
         _subject._queue.clear();
         // refill buffer, without messages in the stream should yield a load of 0.0
         _subject.fillBuffer();
-        assertEquals(0.0, (Double) _subject._bufferLoadMetric.getValueAndReset(), 0.01);
+        assertEquals(0.0, (Double) _subject._bufferStateMetric.getValueAndReset().get(KafkaSpout.METRIC_BUFFER_LOAD), 0.01);
     }
 
     @Test
-    public void testTotalBytesMetric() {
+    public void testFillTimeMetric() {
+        _subject._bufferStateMetric = new MultiAssignableMetric<Number>();
+        _subject._queue.clear();
+        _subject._inProgress.clear();
+
+        _subject.fillBuffer();
+        final long fillTime = _subject._bufferStateMetric.getValueAndReset().get(KafkaSpout.METRIC_BUFFER_FILL_TIME).longValue();
+        // no delays, fill time should be ~0
+        assertThat(fillTime, greaterThanOrEqualTo(0L));
+        assertThat(fillTime, lessThanOrEqualTo(2L));
+    }
+
+    @Test
+    public void testFillIntervalMetric() {
+        _subject._bufferStateMetric = new MultiAssignableMetric<Number>();
+        _subject._queue.clear();
+        _subject._inProgress.clear();
+
+        // assert start state
+        assertEquals(0L, _subject._lastFillTime);
+        _subject.fillBuffer();
+        // assert no non-sensical interval has been set
+        assertNull(_subject._bufferStateMetric.getValueAndReset().get(KafkaSpout.METRIC_BUFFER_FILL_INTERVAL));
+        // assert last fill time has been set
+        assertThat(_subject._lastFillTime, greaterThan(0L));
+        assertThat(_subject._lastFillTime, lessThanOrEqualTo(System.currentTimeMillis()));
+
+        // clear and fill again
+        _subject._queue.clear();
+        _subject._inProgress.clear();
+        _subject.fillBuffer();
+        // assert metric was set
+        assertNotNull(_subject._bufferStateMetric.getValueAndReset().get(KafkaSpout.METRIC_BUFFER_FILL_INTERVAL));
+        final long fillInterval = _subject._bufferStateMetric.getValueAndReset().get(KafkaSpout.METRIC_BUFFER_FILL_INTERVAL).longValue();
+        // no delays, fill interval should be ~0
+        assertThat(fillInterval, greaterThanOrEqualTo(0L));
+        assertThat(fillInterval, lessThanOrEqualTo(2L));
+    }
+
+    @Test
+    public void testEmittedBytesMetric() {
         _subject._emittedBytesMetric = new CountMetric();
         final long originalTotal = (Long) _subject._emittedBytesMetric.getValueAndReset();
         assertEquals(originalTotal, 0);
