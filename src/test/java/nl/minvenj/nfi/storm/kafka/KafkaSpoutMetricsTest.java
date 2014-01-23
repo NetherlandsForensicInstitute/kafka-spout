@@ -100,7 +100,7 @@ public class KafkaSpoutMetricsTest {
         final long fillTime = _subject._bufferStateMetric.getValueAndReset().get(KafkaSpout.METRIC_BUFFER_FILL_TIME).longValue();
         // no delays, fill time should be ~0
         assertThat(fillTime, greaterThanOrEqualTo(0L));
-        assertThat(fillTime, lessThanOrEqualTo(2L));
+        assertThat(fillTime, lessThanOrEqualTo(20L));
     }
 
     @Test
@@ -127,7 +127,7 @@ public class KafkaSpoutMetricsTest {
         final long fillInterval = _subject._bufferStateMetric.getValueAndReset().get(KafkaSpout.METRIC_BUFFER_FILL_INTERVAL).longValue();
         // no delays, fill interval should be ~0
         assertThat(fillInterval, greaterThanOrEqualTo(0L));
-        assertThat(fillInterval, lessThanOrEqualTo(2L));
+        assertThat(fillInterval, lessThanOrEqualTo(20L));
     }
 
     @Test
