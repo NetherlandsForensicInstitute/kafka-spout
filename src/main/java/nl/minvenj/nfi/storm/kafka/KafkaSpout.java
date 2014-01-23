@@ -35,7 +35,6 @@ import java.util.TreeMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import backtype.storm.metric.api.AssignableMetric;
 import backtype.storm.metric.api.CountMetric;
 import backtype.storm.spout.SpoutOutputCollector;
 import backtype.storm.task.TopologyContext;
@@ -54,6 +53,7 @@ import nl.minvenj.nfi.storm.kafka.fail.FailHandler;
 import nl.minvenj.nfi.storm.kafka.util.ConfigUtils;
 import nl.minvenj.nfi.storm.kafka.util.KafkaMessageId;
 import nl.minvenj.nfi.storm.kafka.util.metric.KafkaOffsetMetric;
+import nl.minvenj.nfi.storm.kafka.util.metric.MultiAssignableMetric;
 
 /**
  * Storm spout reading messages from kafka, emitting them as single field tuples.
@@ -80,14 +80,22 @@ import nl.minvenj.nfi.storm.kafka.util.metric.KafkaOffsetMetric;
  */
 public class KafkaSpout implements IRichSpout {
     /**
-     * Metric name exposing the current buffer load of the spout. Buffer load is expressed as number between 0.0
-     * (buffer was empty after (re)filling it) and 1.0 (buffer was full after (re)filling it).
+     * Metric name exposing the current buffer state of the spout:
+     * <ul>
+     * <li>{@code load}: buffer load after refill (0.0 being empty, 1.0 being full);</li>
+     * <li>{@code fill_time}: amount of time to complete the last buffer refill;</li>
+     * <li>{@code fill_interval}: amount of time between last and previous buffer refill.</li>
+     * </ul>
+     *
+     * @see #METRIC_BUFFER_LOAD
+     * @see #METRIC_BUFFER_FILL_TIME
+     * @see #METRIC_BUFFER_FILL_INTERVAL
      */
-    public static final String METRIC_BUFFER_LOAD = "buffer_load";
+    public static final String METRIC_BUFFER_STATE = "buffer_state";
     /**
-     * Default buffer load metric interval.
+     * Default buffer state metric interval.
      */
-    public static final int METRIC_BUFFER_INTERVAL = 1;
+    public static final int METRIC_BUFFER_STATE_INTERVAL = 1;
     /**
      * Metric name exposing the number of message bytes consumed from kafka and emitted to the topology.
      */
@@ -104,6 +112,18 @@ public class KafkaSpout implements IRichSpout {
      * Default offsets metric interval.
      */
     public static final int METRIC_OFFSETS_INTERVAL = 60;
+    /**
+     * Metric name for the buffer load after a refill (number 0.0–1.0).
+     */
+    public static final String METRIC_BUFFER_LOAD = "load";
+    /**
+     * Metric name for the time the last buffer refill took.
+     */
+    public static final String METRIC_BUFFER_FILL_TIME = "fill_time";
+    /**
+     * Metric name for the time between the last and previous buffer refill.
+     */
+    public static final String METRIC_BUFFER_FILL_INTERVAL = "fill_interval";
     private static final long serialVersionUID = -1L;
     private static final Logger LOG = LoggerFactory.getLogger(KafkaSpout.class);
     /**
@@ -126,9 +146,10 @@ public class KafkaSpout implements IRichSpout {
     protected transient SpoutOutputCollector _collector;
     protected transient ConsumerConnector _consumer;
     // metrics exposed to storm topology context
-    protected transient AssignableMetric _bufferLoadMetric;
+    protected transient MultiAssignableMetric<Number> _bufferStateMetric;
     protected transient CountMetric _emittedBytesMetric;
     protected transient KafkaOffsetMetric _emittedOffsetsMetric;
+    protected transient long _lastFillTime = 0L;
 
     /**
      * Creates a new kafka spout to be submitted in a storm topology. Configuration is read from storm config when the
@@ -179,6 +200,8 @@ public class KafkaSpout implements IRichSpout {
             throw new IllegalStateException("cannot fill buffer when buffer or pending messages are non-empty");
         }
 
+        final long startTime = System.currentTimeMillis();
+
         if (_iterator == null) {
             // create a stream of messages from _consumer using the streams as defined on construction
             final Map<String, List<KafkaStream<byte[], byte[]>>> streams = _consumer.createMessageStreams(Collections.singletonMap(_topic, 1));
@@ -201,21 +224,34 @@ public class KafkaSpout implements IRichSpout {
             // timeout does *not* mean that no messages were read (state is checked below)
         }
 
-        if (_bufferLoadMetric != null) {
+        if (_bufferStateMetric != null) {
             // set value for buffer load (0.0 = empty, 1.0 = full)
-            _bufferLoadMetric.setValue(((double) _inProgress.size()) / _bufSize);
+            _bufferStateMetric.set(METRIC_BUFFER_LOAD, ((double) _inProgress.size()) / _bufSize);
         }
 
-        if (_inProgress.size() > 0) {
-            // set _queue to all currently pending kafka message ids
-            _queue.addAll(_inProgress.keySet());
-            LOG.debug("buffer now has {} messages to be emitted", _queue.size());
-            // message(s) appended to buffer
-            return true;
+        try {
+            if (_inProgress.size() > 0) {
+                // set _queue to all currently pending kafka message ids
+                _queue.addAll(_inProgress.keySet());
+                LOG.debug("buffer now has {} messages to be emitted", _queue.size());
+                // message(s) appended to buffer
+                return true;
+            }
+            else {
+                // no messages appended to buffer
+                return false;
+            }
         }
-        else {
-            // no messages appended to buffer
-            return false;
+        finally {
+            if (_bufferStateMetric != null) {
+                final long now = System.currentTimeMillis();
+                _bufferStateMetric.set(METRIC_BUFFER_FILL_TIME, now - startTime);
+                if (_lastFillTime != 0L) {
+                    // update buffer fill interval only if this is a *re*fill
+                    _bufferStateMetric.set(METRIC_BUFFER_FILL_INTERVAL, now - _lastFillTime);
+                }
+                _lastFillTime = now;
+            }
         }
     }
 
@@ -226,11 +262,14 @@ public class KafkaSpout implements IRichSpout {
      */
     protected void registerMetrics(final TopologyContext topology) {
         // initialize buffer load to 0.0 (getValueAndReset won't set it back to 0.0)
-        _bufferLoadMetric = new AssignableMetric(0.0);
+        _bufferStateMetric = new MultiAssignableMetric<Number>();
         _emittedBytesMetric = new CountMetric();
         _emittedOffsetsMetric = new KafkaOffsetMetric();
 
-        topology.registerMetric(METRIC_BUFFER_LOAD, _bufferLoadMetric, METRIC_BUFFER_INTERVAL);
+        // 'reset' refill metric state
+        _lastFillTime = 0L;
+
+        topology.registerMetric(METRIC_BUFFER_STATE, _bufferStateMetric, METRIC_BUFFER_STATE_INTERVAL);
         topology.registerMetric(METRIC_EMITTED_BYTES, _emittedBytesMetric, METRIC_BYTES_INTERVAL);
         topology.registerMetric(METRIC_OFFSETS, _emittedOffsetsMetric, METRIC_OFFSETS_INTERVAL);
     }
