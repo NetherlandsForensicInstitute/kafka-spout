@@ -3,9 +3,27 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>org.sonatype.oss</groupId>
+        <artifactId>oss-parent</artifactId>
+        <version>7</version>
+    </parent>
     <groupId>nl.minvenj.nfi.storm</groupId>
     <artifactId>kafka-spout</artifactId>
     <version>0.2-SNAPSHOT</version>
+    <packaging>jar</packaging>
+    <url>https://github.com/HolmesNL/kafka-spout</url>
+    <scm>
+        <connection>scm:git:git@github.com:HolmesNL/kafka-spout.git</connection>
+        <developerConnection>scm:git:git@github.com:HolmesNL/kafka-spout.git</developerConnection>
+        <url>git@github.com:HolmesNL/kafka-spout.git</url>
+    </scm>
+    <licenses>
+        <license>
+            <name>Apache License, Version 2.0</name>
+            <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+        </license>
+    </licenses>
 
     <profiles>
         <profile>
@@ -137,6 +155,34 @@
                 <configuration>
                     <sourceEncoding>UTF-8</sourceEncoding>
                 </configuration>
+            </plugin>
+            <plugin>
+                <inherited>true</inherited>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-source-plugin</artifactId>
+                <version>2.2.1</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                        <phase>package</phase>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <inherited>true</inherited>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <version>2.8.1</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                        <phase>package</phase>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>
