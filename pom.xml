@@ -3,21 +3,25 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
+
     <parent>
         <groupId>org.sonatype.oss</groupId>
         <artifactId>oss-parent</artifactId>
         <version>7</version>
     </parent>
+
     <groupId>nl.minvenj.nfi.storm</groupId>
     <artifactId>kafka-spout</artifactId>
     <version>0.2-SNAPSHOT</version>
     <packaging>jar</packaging>
     <url>https://github.com/HolmesNL/kafka-spout</url>
+
     <scm>
         <connection>scm:git:git@github.com:HolmesNL/kafka-spout.git</connection>
         <developerConnection>scm:git:git@github.com:HolmesNL/kafka-spout.git</developerConnection>
         <url>git@github.com:HolmesNL/kafka-spout.git</url>
     </scm>
+
     <licenses>
         <license>
             <name>Apache License, Version 2.0</name>
@@ -25,40 +29,20 @@
         </license>
     </licenses>
 
-    <profiles>
-        <profile>
-            <id>jdk7</id>
-            <activation>
-                <activeByDefault>true</activeByDefault>
-            </activation>
-            <properties>
-                <jdk.version>1.7</jdk.version>
-            </properties>
-        </profile>
-        <profile>
-            <id>jdk6</id>
-            <activation>
-                <jdk>1.6</jdk>
-            </activation>
-            <properties>
-                <jdk.version>1.6</jdk.version>
-            </properties>
-        </profile>
-    </profiles>
-
     <properties>
-        <maven.compiler.source>${jdk.version}</maven.compiler.source>
-        <maven.compiler.target>${jdk.version}</maven.compiler.target>
+        <maven.compiler.source>1.6</maven.compiler.source>
+        <maven.compiler.target>1.6</maven.compiler.target>
 
-        <storm.version>0.9.0.1</storm.version>
-        <kafka.version>0.8.0</kafka.version>
-        <slf4j.version>1.7.5</slf4j.version>
-
-        <junit.version>4.11</junit.version>
-        <hamcrest.version>1.3</hamcrest.version>
-        <mockito.version>1.9.5</mockito.version>
-        <jacoco.version>0.6.4.201312101107</jacoco.version>
         <coveralls.version>2.0.1</coveralls.version>
+        <hamcrest.version>1.3</hamcrest.version>
+        <jacoco.version>0.6.4.201312101107</jacoco.version>
+        <javadoc.plugin.version>2.8.1</javadoc.plugin.version>
+        <junit.version>4.11</junit.version>
+        <kafka.version>0.8.0</kafka.version>
+        <mockito.version>1.9.5</mockito.version>
+        <slf4j.version>1.7.5</slf4j.version>
+        <source.plugin.version>2.2.1</source.plugin.version>
+        <storm.version>0.9.0.1</storm.version>
     </properties>
 
     <repositories>
@@ -160,7 +144,7 @@
                 <inherited>true</inherited>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-source-plugin</artifactId>
-                <version>2.2.1</version>
+                <version>${source.plugin.version}</version>
                 <executions>
                     <execution>
                         <goals>
@@ -174,7 +158,7 @@
                 <inherited>true</inherited>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-javadoc-plugin</artifactId>
-                <version>2.8.1</version>
+                <version>${javadoc.plugin.version}</version>
                 <executions>
                     <execution>
                         <goals>
