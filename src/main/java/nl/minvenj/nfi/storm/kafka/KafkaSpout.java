@@ -106,6 +106,15 @@ public class KafkaSpout implements IRichSpout {
     }
 
     /**
+     * Creates a new kafka spout to be submitted in a storm topology. Configuration is read from storm config when the
+     * spout is opened.
+     */
+    public KafkaSpout(String topicName) {
+        this();
+        this._topic = topicName;
+    }
+
+    /**
      * Convenience method assigning a {@link FailHandler} instance to this kafka spout. If the configured value is
      * {@code null}, {@link ConfigUtils#DEFAULT_FAIL_HANDLER} will be used, otherwise the creation is delegated to
      * {@link ConfigUtils#createFailHandlerFromString(String)}.
@@ -197,7 +206,9 @@ public class KafkaSpout implements IRichSpout {
     public void open(final Map config, final TopologyContext topology, final SpoutOutputCollector collector) {
         _collector = collector;
 
-        _topic = getTopic((Map<String, Object>) config);
+        if (null == _topic) {
+            _topic = getTopic((Map<String, Object>) config);
+        }
 
         _bufSize = getMaxBufSize((Map<String, Object>) config);
 
