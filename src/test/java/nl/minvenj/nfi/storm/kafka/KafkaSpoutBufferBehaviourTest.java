@@ -72,15 +72,15 @@ public class KafkaSpoutBufferBehaviourTest {
     protected static final Map<String, List<KafkaStream<byte[], byte[]>>> SINGLE_MESSAGE_STREAM = new HashMap<String, List<KafkaStream<byte[], byte[]>>>() {{
         final KafkaStream<byte[], byte[]> mockedStream = mock(KafkaStream.class);
         final ConsumerIterator<byte[], byte[]> iterator = mock(ConsumerIterator.class);
+        final MessageAndMetadata<byte[], byte[]> message = mock(MessageAndMetadata.class);
+        when(message.partition()).thenReturn(1);
+        when(message.offset()).thenReturn(1234L);
+
         // make the iterator indicate a next message available once
         when(iterator.hasNext()).thenReturn(true);
-        when(iterator.next()).thenReturn(new MessageAndMetadata<byte[], byte[]>(
-            new byte[0],
-            new byte[0],
-            "test-topic",
-            1,
-            1234
-        )).thenThrow(ConsumerTimeoutException.class);
+        when(iterator.next())
+            .thenReturn(message)
+            .thenThrow(ConsumerTimeoutException.class);
         when(mockedStream.iterator()).thenReturn(iterator);
         put("test-topic", Arrays.asList(mockedStream));
     }};
