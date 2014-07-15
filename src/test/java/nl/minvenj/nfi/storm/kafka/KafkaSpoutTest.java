@@ -14,9 +14,6 @@ import java.util.Map;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.*;
 
-/**
- * Created by sjacobs on 7/10/14.
- */
 @RunWith(MockitoJUnitRunner.class)
 public class KafkaSpoutTest {
 

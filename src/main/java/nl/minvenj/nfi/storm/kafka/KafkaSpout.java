@@ -108,8 +108,10 @@ public class KafkaSpout implements IRichSpout {
     /**
      * Creates a new kafka spout to be submitted in a storm topology. Configuration is read from storm config when the
      * spout is opened.
+     *
+     * @param topicName The kafka topic to read messages from.
      */
-    public KafkaSpout(String topicName) {
+    public KafkaSpout(final String topicName) {
         this();
         this._topic = topicName;
     }
@@ -206,7 +208,7 @@ public class KafkaSpout implements IRichSpout {
     public void open(final Map config, final TopologyContext topology, final SpoutOutputCollector collector) {
         _collector = collector;
 
-        if (null == _topic) {
+        if (_topic == null) {
             _topic = getTopic((Map<String, Object>) config);
         }
 
