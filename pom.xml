@@ -22,6 +22,15 @@
         <url>git@github.com:HolmesNL/kafka-spout.git</url>
     </scm>
 
+    <developers>
+        <developer>
+            <name>Mattijs Ugen</name>
+            <email>github@holmes.nl</email>
+            <organization>Netherlands Forensic Institute</organization>
+            <organizationUrl>http://www.forensicinstitute.nl</organizationUrl>
+        </developer>
+    </developers>
+
     <licenses>
         <license>
             <name>Apache License, Version 2.0</name>
