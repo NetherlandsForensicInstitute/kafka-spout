@@ -12,8 +12,10 @@
 
     <groupId>nl.minvenj.nfi.storm</groupId>
     <artifactId>kafka-spout</artifactId>
-    <version>0.2-SNAPSHOT</version>
+    <version>0.2</version>
     <packaging>jar</packaging>
+    <name>${project.groupId}:${project.artifactId}</name>
+    <description>Storm spout emitting messages from a Kafka topic</description>
     <url>https://github.com/HolmesNL/kafka-spout</url>
 
     <scm>
