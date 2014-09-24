@@ -95,6 +95,8 @@ public interface FailHandler extends Serializable {
 
     /**
      * Called by {@link nl.minvenj.nfi.storm.kafka.KafkaSpout} on opening the spout to log the failure policy used.
+     *
+     * @return A short identifier for this type of {@link FailHandler}.
      */
     String getIdentifier();
 }

@@ -16,10 +16,22 @@
 
 package nl.minvenj.nfi.storm.kafka.util;
 
+import static nl.minvenj.nfi.storm.kafka.util.ConfigUtils.CONFIG_BUFFER_MAX_MESSAGES;
+import static nl.minvenj.nfi.storm.kafka.util.ConfigUtils.CONFIG_FILE;
+import static nl.minvenj.nfi.storm.kafka.util.ConfigUtils.CONFIG_GROUP;
 import static nl.minvenj.nfi.storm.kafka.util.ConfigUtils.CONFIG_TOPIC;
+import static nl.minvenj.nfi.storm.kafka.util.ConfigUtils.DEFAULT_BUFFER_MAX_MESSAGES;
+import static nl.minvenj.nfi.storm.kafka.util.ConfigUtils.DEFAULT_GROUP;
 import static nl.minvenj.nfi.storm.kafka.util.ConfigUtils.DEFAULT_TOPIC;
+import static nl.minvenj.nfi.storm.kafka.util.ConfigUtils.checkConfigSanity;
+import static nl.minvenj.nfi.storm.kafka.util.ConfigUtils.configFromPrefix;
+import static nl.minvenj.nfi.storm.kafka.util.ConfigUtils.configFromResource;
+import static nl.minvenj.nfi.storm.kafka.util.ConfigUtils.createFailHandlerFromString;
+import static nl.minvenj.nfi.storm.kafka.util.ConfigUtils.createKafkaConfig;
 import static nl.minvenj.nfi.storm.kafka.util.ConfigUtils.getMaxBufSize;
+import static nl.minvenj.nfi.storm.kafka.util.ConfigUtils.getStormZookeepers;
 import static nl.minvenj.nfi.storm.kafka.util.ConfigUtils.getTopic;
+
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
@@ -27,16 +39,6 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-
-import static nl.minvenj.nfi.storm.kafka.util.ConfigUtils.CONFIG_BUFFER_MAX_MESSAGES;
-import static nl.minvenj.nfi.storm.kafka.util.ConfigUtils.CONFIG_FILE;
-import static nl.minvenj.nfi.storm.kafka.util.ConfigUtils.DEFAULT_BUFFER_MAX_MESSAGES;
-import static nl.minvenj.nfi.storm.kafka.util.ConfigUtils.checkConfigSanity;
-import static nl.minvenj.nfi.storm.kafka.util.ConfigUtils.configFromPrefix;
-import static nl.minvenj.nfi.storm.kafka.util.ConfigUtils.configFromResource;
-import static nl.minvenj.nfi.storm.kafka.util.ConfigUtils.createFailHandlerFromString;
-import static nl.minvenj.nfi.storm.kafka.util.ConfigUtils.createKafkaConfig;
-import static nl.minvenj.nfi.storm.kafka.util.ConfigUtils.getStormZookeepers;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -86,6 +88,9 @@ public class ConfigUtilsTest {
         // assert existence of values for keys without the prefix
         assertEquals("non-existent.host:2181", config.getProperty("zookeeper.connect"));
         assertEquals("nonsense", config.getProperty("property.that.makes.little.sense"));
+
+        // assert that required keys have been added
+        assertEquals(config.getProperty("auto.commit.enable"), "false");
     }
 
     @Test
@@ -109,34 +114,75 @@ public class ConfigUtilsTest {
         }};
 
         try {
-            final Properties config = createKafkaConfig(stormConfig);
+            createKafkaConfig(stormConfig);
             fail("missing zookeeper configuration not detected");
         }
         catch (final IllegalArgumentException e) {
-            // this is expected, zookeeper configuration is missing
+            assertTrue(e.getMessage().contains("zookeeper.connect"));
         }
+    }
+
+    @Test
+    public void testCreateKafkaConfigGroupId() {
+        final Map<String, Object> stormConfig = new HashMap<String, Object>() {{
+            put("kafka.zookeeper.connect", "non-existent.host:2181");
+            put("kafka.consumer.timeout.ms", "100");
+        }};
+        Properties config = createKafkaConfig(stormConfig);
+        // verify no group.id defaults to DEFAULT_GROUP
+        assertEquals(DEFAULT_GROUP, config.get("group.id"));
+
+        stormConfig.put("kafka.group.id", "");
+        config = createKafkaConfig(stormConfig);
+        // verify empty group.id also defaults to DEFAULT_GROUP
+        assertEquals(DEFAULT_GROUP, config.get("group.id"));
+
+        stormConfig.remove("kafka.group.id");
+        stormConfig.put(CONFIG_GROUP, "group-id");
+        config = createKafkaConfig(stormConfig);
+        // verify empty group.id also defaults to DEFAULT_GROUP
+        assertEquals("group-id", config.get("group.id"));
     }
 
     @Test
     public void testSanityCheckSuccess() {
         final Properties properties = new Properties();
         properties.setProperty("consumer.timeout.ms", "35");
+        properties.setProperty("auto.commit.enable", "false");
 
         // check sanity (should not raise exception
         checkConfigSanity(properties);
     }
 
     @Test
-    public void testSanityCheckFailure() {
+    public void testSanityCheckFailureTimeout() {
         final Properties properties = new Properties();
         // set blocking operation of consumer
         properties.setProperty("consumer.timeout.ms", "-1");
+        // set valid value for auto-commit
+        properties.setProperty("auto.commit.enable", "false");
 
         try {
             checkConfigSanity(properties);
         }
         catch (final IllegalArgumentException e) {
             // this is expected, blocking consumer config should be rejected
+        }
+    }
+
+    @Test
+    public void testSanityCheckFailureAutoCommit() {
+        final Properties properties = new Properties();
+        // set auto-commit
+        properties.setProperty("auto.commit.enable", "true");
+        // set valid value for timeout
+        properties.setProperty("consumer.timeout.ms", "35");
+
+        try {
+            checkConfigSanity(properties);
+        }
+        catch (final IllegalArgumentException e) {
+            // this is expected, auto-committing config should be rejected
         }
     }
 
@@ -214,14 +260,33 @@ public class ConfigUtilsTest {
         try {
             // class cannot be loaded, should yield nested ClassNotFoundException
             createFailHandlerFromString("net.example.AbstractClassThatDoesNotActuallyExistImplFactory");
+            fail("created fail handler from non-existing class name");
         }
         catch (final IllegalArgumentException e) {
-            assertTrue(e.getCause() instanceof ReflectiveOperationException);
+            assertTrue(e.getCause() instanceof ClassNotFoundException);
+        }
+
+        try {
+            // class cannot be instantiated
+            createFailHandlerFromString(FailHandler.class.getName());
+            fail("created fail handler from interface only");
+        }
+        catch (final IllegalArgumentException e) {
+            assertTrue(e.getCause() instanceof InstantiationException);
+        }
+
+        try {
+            createFailHandlerFromString(PrivateFailHandler.class.getName());
+            fail("created fail handler from broken test class");
+        }
+        catch (final IllegalArgumentException e) {
+            assertTrue(e.getCause() instanceof IllegalAccessException);
         }
 
         try {
             // class cannot be cast to FailHandler, should yield nested ClassCastException
             createFailHandlerFromString(ConfigUtilsTest.class.getName());
+            fail("created fail handler from class not implementing FailHandler");
         }
         catch (final IllegalArgumentException e) {
             assertTrue(e.getCause() instanceof ClassCastException);
@@ -270,6 +335,24 @@ public class ConfigUtilsTest {
     protected static class TestFailHandler extends AbstractFailHandler {
         @Override
         public boolean shouldReplay(final KafkaMessageId id) {
+            return false;
+        }
+
+        @Override
+        public String getIdentifier() {
+            return "test";
+        }
+    }
+
+    /**
+     * Broken implementation of FailHandler (private constructor should break instantiation through reflection).
+     */
+    protected static class PrivateFailHandler extends AbstractFailHandler {
+        private PrivateFailHandler() {
+        }
+
+        @Override
+        public boolean shouldReplay(KafkaMessageId id) {
             return false;
         }
 

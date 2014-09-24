@@ -16,12 +16,18 @@
 
 package nl.minvenj.nfi.storm.kafka;
 
+import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.argThat;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -31,15 +37,18 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.NoSuchElementException;
+import java.util.SortedMap;
 
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
+import org.mockito.ArgumentMatcher;
 
 import backtype.storm.spout.SpoutOutputCollector;
+import backtype.storm.topology.OutputFieldsDeclarer;
+import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Values;
 import kafka.consumer.ConsumerIterator;
+import kafka.consumer.ConsumerTimeoutException;
 import kafka.consumer.KafkaStream;
 import kafka.javaapi.consumer.ConsumerConnector;
 import kafka.message.MessageAndMetadata;
@@ -63,15 +72,15 @@ public class KafkaSpoutBufferBehaviourTest {
     protected static final Map<String, List<KafkaStream<byte[], byte[]>>> SINGLE_MESSAGE_STREAM = new HashMap<String, List<KafkaStream<byte[], byte[]>>>() {{
         final KafkaStream<byte[], byte[]> mockedStream = mock(KafkaStream.class);
         final ConsumerIterator<byte[], byte[]> iterator = mock(ConsumerIterator.class);
+        final MessageAndMetadata<byte[], byte[]> message = mock(MessageAndMetadata.class);
+        when(message.partition()).thenReturn(1);
+        when(message.offset()).thenReturn(1234L);
+
         // make the iterator indicate a next message available once
-        when(iterator.hasNext()).thenReturn(true).thenReturn(false);
-        when(iterator.next()).thenReturn(new MessageAndMetadata<>(
-            new byte[0],
-            new byte[0],
-            "test-topic",
-            1,
-            1234
-        )).thenThrow(NoSuchElementException.class);
+        when(iterator.hasNext()).thenReturn(true);
+        when(iterator.next())
+            .thenReturn(message)
+            .thenThrow(ConsumerTimeoutException.class);
         when(mockedStream.iterator()).thenReturn(iterator);
         put("test-topic", Arrays.asList(mockedStream));
     }};
@@ -97,6 +106,24 @@ public class KafkaSpoutBufferBehaviourTest {
         _subject._consumer = _consumer;
         // provide a mocked collector to be able to check for emitted values
         _subject._collector = mock(SpoutOutputCollector.class);
+    }
+
+    @Test
+    public void testDeclarations() {
+        final OutputFieldsDeclarer declarer = mock(OutputFieldsDeclarer.class);
+
+        _subject.declareOutputFields(declarer);
+        // verify the spout declares to output single-field tuples
+        verify(declarer).declare(argThat(new ArgumentMatcher<Fields>() {
+            @Override
+            public boolean matches(final Object argument) {
+                final Fields fields = (Fields) argument;
+                return fields.size() == 1 && fields.get(0).equals("bytes");
+            }
+        }));
+
+        // verify the spout will not provide component configuration
+        assertNull(_subject.getComponentConfiguration());
     }
 
     @Test
@@ -181,6 +208,21 @@ public class KafkaSpoutBufferBehaviourTest {
     }
 
     @Test
+    public void testIllegalQueueState() {
+        // queue a single id with no corresponding message
+        final KafkaMessageId id = new KafkaMessageId(1, 1234);
+        _subject._queue.add(id);
+
+        try {
+            _subject.nextTuple();
+            fail("illegal queue state didn't trigger error");
+        }
+        catch (final IllegalStateException e) {
+            assertThat(e.getMessage(), containsString(id.toString()));
+        }
+    }
+
+    @Test
     public void testAck() {
         final KafkaMessageId id = new KafkaMessageId(1, 1234);
         _subject._queue.add(id);
@@ -195,6 +237,11 @@ public class KafkaSpoutBufferBehaviourTest {
         // verify that the buffer is still empty and the key is no longer in pending
         assertTrue(_subject._queue.isEmpty());
         assertFalse(_subject._inProgress.containsKey(id));
+
+        // verify that a non-KafkaMessageId argument is ignored
+        final SortedMap<KafkaMessageId, byte[]> spy = spy(_subject._inProgress);
+        _subject.ack(new Object());
+        verifyNoMoreInteractions(spy);
     }
 
     @Test
@@ -217,5 +264,10 @@ public class KafkaSpoutBufferBehaviourTest {
         // verify that the buffer is once again empty and the id has been emitted twice
         assertTrue(_subject._queue.isEmpty());
         verify(_subject._collector, times(2)).emit(any(Values.class), eq(id));
+
+        // verify that a non-KafkaMessageId argument is ignored
+        final SortedMap<KafkaMessageId, byte[]> spy = spy(_subject._inProgress);
+        _subject.fail(new Object());
+        verifyNoMoreInteractions(spy);
     }
 }

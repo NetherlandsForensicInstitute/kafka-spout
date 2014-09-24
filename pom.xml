@@ -3,33 +3,62 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>org.sonatype.oss</groupId>
+        <artifactId>oss-parent</artifactId>
+        <version>7</version>
+    </parent>
+
     <groupId>nl.minvenj.nfi.storm</groupId>
     <artifactId>kafka-spout</artifactId>
-    <version>0.1</version>
+    <version>0.2</version>
+    <packaging>jar</packaging>
+    <name>${project.groupId}:${project.artifactId}</name>
+    <description>Storm spout emitting messages from a Kafka topic</description>
+    <url>https://github.com/HolmesNL/kafka-spout</url>
+
+    <scm>
+        <connection>scm:git:git@github.com:HolmesNL/kafka-spout.git</connection>
+        <developerConnection>scm:git:git@github.com:HolmesNL/kafka-spout.git</developerConnection>
+        <url>git@github.com:HolmesNL/kafka-spout.git</url>
+    </scm>
+
+    <developers>
+        <developer>
+            <name>Mattijs Ugen</name>
+            <email>github@holmes.nl</email>
+            <organization>Netherlands Forensic Institute</organization>
+            <organizationUrl>http://www.forensicinstitute.nl</organizationUrl>
+        </developer>
+    </developers>
+
+    <licenses>
+        <license>
+            <name>Apache License, Version 2.0</name>
+            <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+        </license>
+    </licenses>
 
     <properties>
-        <maven.compiler.source>1.7</maven.compiler.source>
-        <maven.compiler.target>1.7</maven.compiler.target>
+        <maven.compiler.source>1.6</maven.compiler.source>
+        <maven.compiler.target>1.6</maven.compiler.target>
 
-        <storm.version>0.9.0.1</storm.version>
-        <kafka.version>0.8.0</kafka.version>
-        <slf4j.version>1.7.5</slf4j.version>
-
-        <junit.version>4.11</junit.version>
+        <coveralls.version>2.2.0</coveralls.version>
         <hamcrest.version>1.3</hamcrest.version>
+        <jacoco.version>0.7.1.201405082137</jacoco.version>
+        <javadoc.plugin.version>2.9.1</javadoc.plugin.version>
+        <junit.version>4.11</junit.version>
+        <kafka.version>0.8.1.1</kafka.version>
         <mockito.version>1.9.5</mockito.version>
+        <slf4j.version>1.7.5</slf4j.version>
+        <source.plugin.version>2.3</source.plugin.version>
+        <storm.version>0.9.2-incubating</storm.version>
     </properties>
-
-    <repositories>
-        <repository>
-            <id>clojars.org</id>
-            <url>http://clojars.org/repo</url>
-        </repository>
-    </repositories>
 
     <dependencies>
         <dependency>
-            <groupId>storm</groupId>
+            <groupId>org.apache.storm</groupId>
             <artifactId>storm-core</artifactId>
             <version>${storm.version}</version>
             <scope>provided</scope>
@@ -91,4 +120,58 @@
             <scope>test</scope>
         </dependency>
     </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+                <version>${jacoco.version}</version>
+                <executions>
+                    <execution>
+                        <id>prepare-agent</id>
+                        <goals>
+                            <goal>prepare-agent</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.eluder.coveralls</groupId>
+                <artifactId>coveralls-maven-plugin</artifactId>
+                <version>${coveralls.version}</version>
+                <configuration>
+                    <sourceEncoding>UTF-8</sourceEncoding>
+                </configuration>
+            </plugin>
+            <plugin>
+                <inherited>true</inherited>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-source-plugin</artifactId>
+                <version>${source.plugin.version}</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                        <phase>package</phase>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <inherited>true</inherited>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <version>${javadoc.plugin.version}</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                        <phase>package</phase>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
 </project>
