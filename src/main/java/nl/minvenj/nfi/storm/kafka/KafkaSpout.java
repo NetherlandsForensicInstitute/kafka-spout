@@ -129,6 +129,17 @@ public class KafkaSpout implements IRichSpout {
     }
 
     /**
+     * Creates a new kafka spout to be submitted in a storm topology. Configuration is read from storm config when the
+     * spout is opened.
+     *
+     * @param topicName The kafka topic to read messages from.
+     */
+    public KafkaSpout(final String topicName, Scheme serializationScheme) {
+        this(serializationScheme);
+        this._topic = topicName;
+    }
+    
+    /**
      * Convenience method assigning a {@link FailHandler} instance to this kafka spout. If the configured value is
      * {@code null}, {@link ConfigUtils#DEFAULT_FAIL_HANDLER} will be used, otherwise the creation is delegated to
      * {@link ConfigUtils#createFailHandlerFromString(String)}.
