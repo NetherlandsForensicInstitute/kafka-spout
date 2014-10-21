@@ -41,7 +41,6 @@ import backtype.storm.spout.SpoutOutputCollector;
 import backtype.storm.task.TopologyContext;
 import backtype.storm.topology.IRichSpout;
 import backtype.storm.topology.OutputFieldsDeclarer;
-
 import kafka.consumer.Consumer;
 import kafka.consumer.ConsumerConfig;
 import kafka.consumer.ConsumerIterator;
@@ -52,7 +51,6 @@ import kafka.message.MessageAndMetadata;
 import nl.minvenj.nfi.storm.kafka.fail.FailHandler;
 import nl.minvenj.nfi.storm.kafka.util.ConfigUtils;
 import nl.minvenj.nfi.storm.kafka.util.KafkaMessageId;
-
 
 /**
  * Storm spout reading messages from kafka, emitting them as single field tuples.
@@ -80,6 +78,7 @@ import nl.minvenj.nfi.storm.kafka.util.KafkaMessageId;
 public class KafkaSpout implements IRichSpout {
     private static final long serialVersionUID = -1L;
     private static final Logger LOG = LoggerFactory.getLogger(KafkaSpout.class);
+    protected final Scheme _serializationScheme;
     /**
      * Collection of messages being processed by the topology (either waiting to be emitted or waiting to be
      * acknowledged). Processed message offset is committed when this is becomes empty.
@@ -92,7 +91,6 @@ public class KafkaSpout implements IRichSpout {
      *
      * @see #fillBuffer()
      */
-    protected final Scheme _serializationScheme;
     protected final Queue<KafkaMessageId> _queue = new LinkedList<KafkaMessageId>();
     protected String _topic;
     protected int _bufSize;
@@ -103,42 +101,47 @@ public class KafkaSpout implements IRichSpout {
 
     /**
      * Creates a new kafka spout to be submitted in a storm topology. Configuration is read from storm config when the
-     * spout is opened.
+     * spout is opened. Uses a {@link RawScheme} to serialize messages from kafka as a single {@code byte[]}.
      */
     public KafkaSpout() {
         _serializationScheme = new RawScheme();
     }
-    
+
     /**
-     * Creates a new kafka spout to be submitted in a storm topology with the provided {@link Scheme}. 
-     * Configuration is read from storm config when the spout is opened.
+     * Creates a new kafka spout to be submitted in a storm topology with the provided {@link Scheme}. This impacts
+     * output fields, see {@link #declareOutputFields(OutputFieldsDeclarer)}). Configuration is read from storm config
+     * when the spout is opened.
+     *
+     * @param serializationScheme The serialization to apply to messages read from kafka.
      */
-    public KafkaSpout(Scheme serializationScheme) {
-        this._serializationScheme = serializationScheme;
+    public KafkaSpout(final Scheme serializationScheme) {
+        _serializationScheme = serializationScheme;
     }
 
     /**
      * Creates a new kafka spout to be submitted in a storm topology. Configuration is read from storm config when the
      * spout is opened.
      *
-     * @param topicName The kafka topic to read messages from.
+     * @param topic The kafka topic to read messages from.
      */
-    public KafkaSpout(final String topicName) {
+    public KafkaSpout(final String topic) {
         this();
-        this._topic = topicName;
+        _topic = topic;
     }
 
     /**
-     * Creates a new kafka spout to be submitted in a storm topology. Configuration is read from storm config when the
-     * spout is opened.
+     * Creates a new kafka spout to be submitted in a storm topology with the provided {@link Scheme}. This impacts
+     * output fields, see {@link #declareOutputFields(OutputFieldsDeclarer)}). Configuration is read from storm config
+     * when the spout is opened.
      *
-     * @param topicName The kafka topic to read messages from.
+     * @param topic               The kafka topic to read messages from.
+     * @param serializationScheme The serialization to apply to messages read from kafka.
      */
-    public KafkaSpout(final String topicName, Scheme serializationScheme) {
+    public KafkaSpout(final String topic, final Scheme serializationScheme) {
         this(serializationScheme);
-        this._topic = topicName;
+        _topic = topic;
     }
-    
+
     /**
      * Convenience method assigning a {@link FailHandler} instance to this kafka spout. If the configured value is
      * {@code null}, {@link ConfigUtils#DEFAULT_FAIL_HANDLER} will be used, otherwise the creation is delegated to
@@ -218,7 +221,7 @@ public class KafkaSpout implements IRichSpout {
 
     @Override
     public void declareOutputFields(final OutputFieldsDeclarer declarer) {
-        // declare a single field tuple, containing the message as read from kafka
+        // delegate fields mapping to specified scheme (single field "bytes" by default)
         declarer.declare(_serializationScheme.getOutputFields());
     }
 
@@ -288,7 +291,7 @@ public class KafkaSpout implements IRichSpout {
                 if (message == null) {
                     throw new IllegalStateException("no pending message for next id " + nextId);
                 }
-                // message should be considered a single object from Values' point of view
+                // use specified scheme to deserialize messages (single-field Values by default)
                 _collector.emit(_serializationScheme.deserialize(message), nextId);
                 LOG.debug("emitted kafka message id {} ({} bytes payload)", nextId, message.length);
             }
