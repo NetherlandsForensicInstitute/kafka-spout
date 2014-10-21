@@ -1,22 +1,20 @@
 package nl.minvenj.nfi.storm.kafka;
 
-import backtype.storm.spout.SpoutOutputCollector;
-import backtype.storm.task.TopologyContext;
-import nl.minvenj.nfi.storm.kafka.util.ConfigUtils;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.mockito.internal.util.reflection.Whitebox;
-import org.mockito.runners.MockitoJUnitRunner;
+import static org.junit.Assert.assertEquals;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
 
 import java.util.HashMap;
 import java.util.Map;
 
-import static org.junit.Assert.assertEquals;
-import static org.mockito.Mockito.*;
+import org.junit.Test;
 
-@RunWith(MockitoJUnitRunner.class)
-public class KafkaSpoutTest {
+import backtype.storm.spout.SpoutOutputCollector;
+import backtype.storm.task.TopologyContext;
+import nl.minvenj.nfi.storm.kafka.util.ConfigUtils;
 
+public class KafkaSpoutConstructorTest {
     /**
      * Using the default constructor, a topic name must be in the storm config
      */
@@ -33,7 +31,7 @@ public class KafkaSpoutTest {
 
         spout.open(config, topology, collector);
 
-        assertEquals("Wrong Topic Name", Whitebox.getInternalState(spout, "_topic").toString(), "topic");
+        assertEquals("Wrong Topic Name", spout._topic, "topic");
     }
 
     /**
@@ -51,7 +49,7 @@ public class KafkaSpoutTest {
 
         spout.open(config, topology, collector);
 
-        assertEquals("Wrong Topic Name", Whitebox.getInternalState(spout, "_topic").toString(), ConfigUtils.DEFAULT_TOPIC);
+        assertEquals("Wrong Topic Name", spout._topic, ConfigUtils.DEFAULT_TOPIC);
     }
 
     /**
@@ -68,7 +66,7 @@ public class KafkaSpoutTest {
         doNothing().when(spout).createConsumer(config);
 
         spout.open(config, topology, collector);
-        assertEquals("Wrong Topic Name", Whitebox.getInternalState(spout, "_topic").toString(), "OVERLOAD");
+        assertEquals("Wrong Topic Name", spout._topic, "OVERLOAD");
     }
 
     /**
@@ -87,7 +85,6 @@ public class KafkaSpoutTest {
 
         spout.open(config, topology, collector);
 
-        assertEquals("Wrong Topic Name", Whitebox.getInternalState(spout, "_topic").toString(), "OVERLOAD");
+        assertEquals("Wrong Topic Name", spout._topic, "OVERLOAD");
     }
-
 }
