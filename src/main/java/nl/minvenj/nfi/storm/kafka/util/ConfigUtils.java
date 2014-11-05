@@ -82,8 +82,18 @@ public class ConfigUtils {
      * Default maximum buffer size in number of messages ({@code 1024}).
      */
     public static final int DEFAULT_BUFFER_MAX_MESSAGES = 1024;
-    private static final Logger LOG = LoggerFactory.getLogger(ConfigUtils.class);
+    /**
+     * Storm configuration key used to determine if consumer offsets should be committed
+     * to zookeeper after processing each batch of events received from kafka.
+     */
+    public static final String COMMIT_OFFSETS_AFTER_PROCESSING_MESSAGES = "kafka.spout.commit.after.processing.messages";
+    /**
+     * Default value for committing offsets after processing a batch of events ({@code true}).
+     */
+    private static final boolean DEFAULT_COMMIT_OFFSETS_AFTER_PROCESSING_MESSAGES = true;;
 
+    private static final Logger LOG = LoggerFactory.getLogger(ConfigUtils.class);
+    
     /**
      * Reads configuration from a classpath resource stream obtained from the current thread's class loader through
      * {@link ClassLoader#getSystemResourceAsStream(String)}.
@@ -276,7 +286,7 @@ public class ConfigUtils {
 
         return DEFAULT_BUFFER_MAX_MESSAGES;
     }
-
+    
     /**
      * Retrieves the topic to be consumed from storm's configuration map, or the {@link #DEFAULT_TOPIC} if no
      * (non-empty) value was found using {@link #CONFIG_TOPIC}.
@@ -300,6 +310,27 @@ public class ConfigUtils {
             LOG.warn("no configured topic found in storm config, defaulting to topic '{}'", DEFAULT_TOPIC);
             return DEFAULT_TOPIC;
         }
+    }
+
+
+    /**
+     * Retrieves if we consumer offsets should be committed to zookeeper 
+     * after each chunk of messages retrieved from Kafka is processed. 
+     * 
+     * @param stormConfig Storm's configuration map.
+     * @return true if offsets should be committed after processing chunks of messages.
+     */
+    public static boolean getCommitOffsetsAfterProcessingAllMessages(Map<String, Object> stormConfig) {
+        final Object value = stormConfig.get(COMMIT_OFFSETS_AFTER_PROCESSING_MESSAGES);
+        if(value == null) {
+            try {
+                return Boolean.parseBoolean(String.valueOf(value).trim());
+            }
+            catch(final NumberFormatException e) {
+                LOG.warn("invalid value for '{}' in storm config ({}); falling back to default ({})", COMMIT_OFFSETS_AFTER_PROCESSING_MESSAGES, value, DEFAULT_COMMIT_OFFSETS_AFTER_PROCESSING_MESSAGES);
+            }
+        }
+        return DEFAULT_COMMIT_OFFSETS_AFTER_PROCESSING_MESSAGES;
     }
 
     /**

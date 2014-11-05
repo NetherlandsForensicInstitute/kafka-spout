@@ -22,6 +22,7 @@ import static nl.minvenj.nfi.storm.kafka.util.ConfigUtils.createFailHandlerFromS
 import static nl.minvenj.nfi.storm.kafka.util.ConfigUtils.createKafkaConfig;
 import static nl.minvenj.nfi.storm.kafka.util.ConfigUtils.getMaxBufSize;
 import static nl.minvenj.nfi.storm.kafka.util.ConfigUtils.getTopic;
+import static nl.minvenj.nfi.storm.kafka.util.ConfigUtils.getCommitOffsetsAfterProcessingAllMessages;
 
 import java.util.Collections;
 import java.util.LinkedList;
@@ -41,7 +42,6 @@ import backtype.storm.spout.SpoutOutputCollector;
 import backtype.storm.task.TopologyContext;
 import backtype.storm.topology.IRichSpout;
 import backtype.storm.topology.OutputFieldsDeclarer;
-
 import kafka.consumer.Consumer;
 import kafka.consumer.ConsumerConfig;
 import kafka.consumer.ConsumerIterator;
@@ -100,6 +100,7 @@ public class KafkaSpout implements IRichSpout {
     protected ConsumerIterator<byte[], byte[]> _iterator;
     protected transient SpoutOutputCollector _collector;
     protected transient ConsumerConnector _consumer;
+    protected transient boolean _commitAfterProcessingAllMessages;
 
     /**
      * Creates a new kafka spout to be submitted in a storm topology. Configuration is read from storm config when the
@@ -237,6 +238,8 @@ public class KafkaSpout implements IRichSpout {
 
         _bufSize = getMaxBufSize((Map<String, Object>) config);
 
+        _commitAfterProcessingAllMessages = getCommitOffsetsAfterProcessingAllMessages((Map<String, Object>) config);
+        
         createFailHandler((String) config.get(CONFIG_FAIL_HANDLER));
 
         // ensure availability of kafka consumer
@@ -302,7 +305,7 @@ public class KafkaSpout implements IRichSpout {
             // message corresponding to o is no longer pending
             _inProgress.remove(id);
             LOG.debug("kafka message {} acknowledged", id);
-            if (_inProgress.isEmpty()) {
+            if (_inProgress.isEmpty() && _commitAfterProcessingAllMessages) {
                 // commit offsets to zookeeper when pending is now empty
                 // (buffer will be filled on next call to nextTuple())
                 LOG.debug("all pending messages acknowledged, committing client offsets");
