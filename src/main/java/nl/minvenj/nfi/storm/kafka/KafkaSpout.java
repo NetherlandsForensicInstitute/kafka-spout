@@ -201,7 +201,7 @@ public class KafkaSpout implements IRichSpout {
                 size++;
             }
         }
-        catch (final ConsumerTimeoutException e) {
+        catch (final Exception e) {
             // ignore, storm will call nextTuple again at some point in the near future
             // timeout does *not* mean that no messages were read (state is checked below)
         }
