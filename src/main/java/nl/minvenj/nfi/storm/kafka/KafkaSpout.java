@@ -32,6 +32,7 @@ import java.util.Queue;
 import java.util.SortedMap;
 import java.util.TreeMap;
 
+import kafka.message.InvalidMessageException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -200,6 +201,9 @@ public class KafkaSpout implements IRichSpout {
                 _inProgress.put(id, message.message());
                 size++;
             }
+        }
+        catch (final InvalidMessageException e) {
+            LOG.warn(e.getMessage(), e);
         }
         catch (final ConsumerTimeoutException e) {
             // ignore, storm will call nextTuple again at some point in the near future
