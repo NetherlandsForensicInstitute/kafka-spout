@@ -43,6 +43,8 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentMatcher;
 
+import backtype.storm.spout.RawScheme;
+import backtype.storm.spout.Scheme;
 import backtype.storm.spout.SpoutOutputCollector;
 import backtype.storm.topology.OutputFieldsDeclarer;
 import backtype.storm.tuple.Fields;
@@ -89,8 +91,9 @@ public class KafkaSpoutBufferBehaviourTest {
 
     @Before
     public void setup() {
+        final Scheme scheme = spy(new RawScheme());
         // main test subject
-        _subject = new KafkaSpout();
+        _subject = new KafkaSpout(scheme);
 
         // assign the topic to be used for stream retrieval
         _subject._topic = "test-topic";
@@ -186,6 +189,7 @@ public class KafkaSpoutBufferBehaviourTest {
         _subject.nextTuple();
 
         // subject should have emitted a Values object identified by id
+        verify(_subject._serializationScheme).deserialize(eq(message));
         verify(_subject._collector).emit(eq(new Values(message)), eq(id));
     }
 
