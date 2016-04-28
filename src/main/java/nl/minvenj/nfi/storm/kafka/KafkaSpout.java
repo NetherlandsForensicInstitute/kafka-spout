@@ -16,6 +16,8 @@
 
 package nl.minvenj.nfi.storm.kafka;
 
+import static java.nio.ByteBuffer.wrap;
+
 import static nl.minvenj.nfi.storm.kafka.util.ConfigUtils.CONFIG_FAIL_HANDLER;
 import static nl.minvenj.nfi.storm.kafka.util.ConfigUtils.DEFAULT_FAIL_HANDLER;
 import static nl.minvenj.nfi.storm.kafka.util.ConfigUtils.createFailHandlerFromString;
@@ -32,22 +34,22 @@ import java.util.Queue;
 import java.util.SortedMap;
 import java.util.TreeMap;
 
-import kafka.message.InvalidMessageException;
+import org.apache.storm.spout.RawScheme;
+import org.apache.storm.spout.Scheme;
+import org.apache.storm.spout.SpoutOutputCollector;
+import org.apache.storm.task.TopologyContext;
+import org.apache.storm.topology.IRichSpout;
+import org.apache.storm.topology.OutputFieldsDeclarer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import backtype.storm.spout.RawScheme;
-import backtype.storm.spout.Scheme;
-import backtype.storm.spout.SpoutOutputCollector;
-import backtype.storm.task.TopologyContext;
-import backtype.storm.topology.IRichSpout;
-import backtype.storm.topology.OutputFieldsDeclarer;
 import kafka.consumer.Consumer;
 import kafka.consumer.ConsumerConfig;
 import kafka.consumer.ConsumerIterator;
 import kafka.consumer.ConsumerTimeoutException;
 import kafka.consumer.KafkaStream;
 import kafka.javaapi.consumer.ConsumerConnector;
+import kafka.message.InvalidMessageException;
 import kafka.message.MessageAndMetadata;
 import nl.minvenj.nfi.storm.kafka.fail.FailHandler;
 import nl.minvenj.nfi.storm.kafka.util.ConfigUtils;
@@ -296,7 +298,7 @@ public class KafkaSpout implements IRichSpout {
                     throw new IllegalStateException("no pending message for next id " + nextId);
                 }
                 // use specified scheme to deserialize messages (single-field Values by default)
-                _collector.emit(_serializationScheme.deserialize(message), nextId);
+                _collector.emit(_serializationScheme.deserialize(wrap(message)), nextId);
                 LOG.debug("emitted kafka message id {} ({} bytes payload)", nextId, message.length);
             }
         }
