@@ -21,10 +21,10 @@ import static org.mockito.Mockito.mock;
 
 import java.util.Map;
 
-import org.junit.Test;
-
 import org.apache.storm.spout.SpoutOutputCollector;
 import org.apache.storm.task.TopologyContext;
+import org.junit.Test;
+
 import nl.minvenj.nfi.storm.kafka.util.KafkaMessageId;
 
 public class UnreliableFailHandlerTest {

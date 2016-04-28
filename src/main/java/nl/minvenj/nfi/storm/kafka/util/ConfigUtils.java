@@ -23,10 +23,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
+import org.apache.storm.Config;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.storm.Config;
 import nl.minvenj.nfi.storm.kafka.fail.FailHandler;
 import nl.minvenj.nfi.storm.kafka.fail.ReliableFailHandler;
 import nl.minvenj.nfi.storm.kafka.fail.UnreliableFailHandler;
