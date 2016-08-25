@@ -34,8 +34,8 @@ import nl.minvenj.nfi.storm.kafka.util.ConfigUtils;
 import org.junit.Before;
 import org.junit.Test;
 
-import backtype.storm.spout.SpoutOutputCollector;
-import backtype.storm.task.TopologyContext;
+import org.apache.storm.spout.SpoutOutputCollector;
+import org.apache.storm.task.TopologyContext;
 import kafka.javaapi.consumer.ConsumerConnector;
 import nl.minvenj.nfi.storm.kafka.fail.FailHandler;
 import nl.minvenj.nfi.storm.kafka.fail.ReliableFailHandler;

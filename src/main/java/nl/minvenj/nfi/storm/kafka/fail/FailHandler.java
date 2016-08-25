@@ -19,8 +19,8 @@ package nl.minvenj.nfi.storm.kafka.fail;
 import java.io.Serializable;
 import java.util.Map;
 
-import backtype.storm.spout.SpoutOutputCollector;
-import backtype.storm.task.TopologyContext;
+import org.apache.storm.spout.SpoutOutputCollector;
+import org.apache.storm.task.TopologyContext;
 import nl.minvenj.nfi.storm.kafka.util.KafkaMessageId;
 
 /**
@@ -63,15 +63,15 @@ public interface FailHandler extends Serializable {
 
     /**
      * Called by the {@link nl.minvenj.nfi.storm.kafka.KafkaSpout} when
-     * {@link nl.minvenj.nfi.storm.kafka.KafkaSpout#open(java.util.Map, backtype.storm.task.TopologyContext, backtype.storm.spout.SpoutOutputCollector)}
+     * {@link nl.minvenj.nfi.storm.kafka.KafkaSpout#open(java.util.Map, org.apache.storm.task.TopologyContext, org.apache.storm.spout.SpoutOutputCollector)}
      * is called on it to allow the {@link FailHandler} to update its state.
      *
      * @param config    The configuration as passed to
-     *                  {@link nl.minvenj.nfi.storm.kafka.KafkaSpout#open(java.util.Map, backtype.storm.task.TopologyContext, backtype.storm.spout.SpoutOutputCollector)}.
+     *                  {@link nl.minvenj.nfi.storm.kafka.KafkaSpout#open(java.util.Map, org.apache.storm.task.TopologyContext, org.apache.storm.spout.SpoutOutputCollector)}.
      * @param topology  The {@link TopologyContext} as passed to
-     *                  {@link nl.minvenj.nfi.storm.kafka.KafkaSpout#open(java.util.Map, backtype.storm.task.TopologyContext, backtype.storm.spout.SpoutOutputCollector)}.
+     *                  {@link nl.minvenj.nfi.storm.kafka.KafkaSpout#open(java.util.Map, org.apache.storm.task.TopologyContext, org.apache.storm.spout.SpoutOutputCollector)}.
      * @param collector The {@link SpoutOutputCollector} as passed to
-     *                  {@link nl.minvenj.nfi.storm.kafka.KafkaSpout#open(java.util.Map, backtype.storm.task.TopologyContext, backtype.storm.spout.SpoutOutputCollector)}.
+     *                  {@link nl.minvenj.nfi.storm.kafka.KafkaSpout#open(java.util.Map, org.apache.storm.task.TopologyContext, org.apache.storm.spout.SpoutOutputCollector)}.
      */
     void open(Map config, TopologyContext topology, SpoutOutputCollector collector);
 

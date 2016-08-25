@@ -31,17 +31,18 @@ import java.util.Properties;
 import java.util.Queue;
 import java.util.SortedMap;
 import java.util.TreeMap;
+import java.nio.ByteBuffer;
 
 import kafka.message.InvalidMessageException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import backtype.storm.spout.RawScheme;
-import backtype.storm.spout.Scheme;
-import backtype.storm.spout.SpoutOutputCollector;
-import backtype.storm.task.TopologyContext;
-import backtype.storm.topology.IRichSpout;
-import backtype.storm.topology.OutputFieldsDeclarer;
+import org.apache.storm.spout.RawScheme;
+import org.apache.storm.spout.Scheme;
+import org.apache.storm.spout.SpoutOutputCollector;
+import org.apache.storm.task.TopologyContext;
+import org.apache.storm.topology.IRichSpout;
+import org.apache.storm.topology.OutputFieldsDeclarer;
 import kafka.consumer.Consumer;
 import kafka.consumer.ConsumerConfig;
 import kafka.consumer.ConsumerIterator;
@@ -296,7 +297,7 @@ public class KafkaSpout implements IRichSpout {
                     throw new IllegalStateException("no pending message for next id " + nextId);
                 }
                 // use specified scheme to deserialize messages (single-field Values by default)
-                _collector.emit(_serializationScheme.deserialize(message), nextId);
+                _collector.emit(_serializationScheme.deserialize(ByteBuffer.wrap(message)), nextId);
                 LOG.debug("emitted kafka message id {} ({} bytes payload)", nextId, message.length);
             }
         }
