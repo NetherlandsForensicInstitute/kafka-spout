@@ -38,17 +38,18 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.SortedMap;
+import java.nio.ByteBuffer;
 
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentMatcher;
 
-import backtype.storm.spout.RawScheme;
-import backtype.storm.spout.Scheme;
-import backtype.storm.spout.SpoutOutputCollector;
-import backtype.storm.topology.OutputFieldsDeclarer;
-import backtype.storm.tuple.Fields;
-import backtype.storm.tuple.Values;
+import org.apache.storm.spout.RawScheme;
+import org.apache.storm.spout.Scheme;
+import org.apache.storm.spout.SpoutOutputCollector;
+import org.apache.storm.topology.OutputFieldsDeclarer;
+import org.apache.storm.tuple.Fields;
+import org.apache.storm.tuple.Values;
 import kafka.consumer.ConsumerIterator;
 import kafka.consumer.ConsumerTimeoutException;
 import kafka.consumer.KafkaStream;
@@ -189,8 +190,8 @@ public class KafkaSpoutBufferBehaviourTest {
         _subject.nextTuple();
 
         // subject should have emitted a Values object identified by id
-        verify(_subject._serializationScheme).deserialize(eq(message));
-        verify(_subject._collector).emit(eq(new Values(message)), eq(id));
+        verify(_subject._serializationScheme).deserialize(eq(ByteBuffer.wrap(message)));
+        verify(_subject._collector).emit(eq(new Values(ByteBuffer.wrap(message))), eq(id));
     }
 
     @Test
@@ -207,7 +208,7 @@ public class KafkaSpoutBufferBehaviourTest {
         _subject.nextTuple();
 
         // subject should have emitted only the first message
-        verify(_subject._collector).emit(eq(new Values(message1)), eq(id1));
+        verify(_subject._collector).emit(eq(new Values(ByteBuffer.wrap(message1))), eq(id1));
         verifyNoMoreInteractions(_subject._collector);
     }
 

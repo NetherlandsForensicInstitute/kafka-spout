@@ -48,7 +48,7 @@ import java.util.Properties;
 
 import org.junit.Test;
 
-import backtype.storm.Config;
+import org.apache.storm.Config;
 import nl.minvenj.nfi.storm.kafka.fail.AbstractFailHandler;
 import nl.minvenj.nfi.storm.kafka.fail.FailHandler;
 import nl.minvenj.nfi.storm.kafka.fail.ReliableFailHandler;

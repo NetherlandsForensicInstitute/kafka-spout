@@ -12,15 +12,16 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.nio.ByteBuffer;
 
 import org.junit.Test;
 import org.mockito.ArgumentMatcher;
 
-import backtype.storm.spout.Scheme;
-import backtype.storm.spout.SpoutOutputCollector;
-import backtype.storm.task.TopologyContext;
-import backtype.storm.topology.OutputFieldsDeclarer;
-import backtype.storm.tuple.Fields;
+import org.apache.storm.spout.Scheme;
+import org.apache.storm.spout.SpoutOutputCollector;
+import org.apache.storm.task.TopologyContext;
+import org.apache.storm.topology.OutputFieldsDeclarer;
+import org.apache.storm.tuple.Fields;
 import nl.minvenj.nfi.storm.kafka.util.ConfigUtils;
 
 public class KafkaSpoutConstructorTest {
@@ -118,10 +119,20 @@ public class KafkaSpoutConstructorTest {
     public void testDelegateCustomScheme() {
         final Scheme scheme = new Scheme() {
             @Override
-            public List<Object> deserialize(final byte[] bytes) {
+            public List<Object> deserialize(final ByteBuffer bbuf) {
+                int base=0;
+                byte[] bytes;
+                int size=bbuf.remaining();
+                if (bbuf.hasArray()) {
+                    base = bbuf.arrayOffset();
+                    bytes = bbuf.array();
+                } else {
+                    bytes = new byte[size];
+                    bbuf.get(bytes, 0, size);
+                }
                 return Arrays.<Object>asList(
-                    new byte[]{bytes[0]},
-                    Arrays.copyOfRange(bytes, 1, bytes.length)
+                    new byte[]{bytes[base]},
+                    Arrays.copyOfRange(bytes, base+1, size)
                 );
             }
 

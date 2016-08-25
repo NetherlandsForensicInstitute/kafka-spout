@@ -18,8 +18,8 @@ package nl.minvenj.nfi.storm.kafka.fail;
 
 import java.util.Map;
 
-import backtype.storm.spout.SpoutOutputCollector;
-import backtype.storm.task.TopologyContext;
+import org.apache.storm.spout.SpoutOutputCollector;
+import org.apache.storm.task.TopologyContext;
 import nl.minvenj.nfi.storm.kafka.util.KafkaMessageId;
 
 /**

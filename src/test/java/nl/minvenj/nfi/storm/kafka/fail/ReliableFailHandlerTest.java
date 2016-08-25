@@ -23,8 +23,8 @@ import java.util.Map;
 
 import org.junit.Test;
 
-import backtype.storm.spout.SpoutOutputCollector;
-import backtype.storm.task.TopologyContext;
+import org.apache.storm.spout.SpoutOutputCollector;
+import org.apache.storm.task.TopologyContext;
 import nl.minvenj.nfi.storm.kafka.util.KafkaMessageId;
 
 /**
