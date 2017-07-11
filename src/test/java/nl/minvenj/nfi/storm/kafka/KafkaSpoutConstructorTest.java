@@ -124,8 +124,7 @@ public class KafkaSpoutConstructorTest {
         // Fields doesn't implement equals; match it manually
         verify(declarer).declare(argThat(new ArgumentMatcher<Fields>() {
             @Override
-            public boolean matches(final Object argument) {
-                final Fields fields = (Fields) argument;
+            public boolean matches(final Fields fields) {
                 return fields.size() == 1 && fields.get(0).equals("bytes");
             }
         }));
@@ -159,8 +158,7 @@ public class KafkaSpoutConstructorTest {
         // Fields doesn't implement equals; match it manually
         verify(declarer, times(2)).declare(argThat(new ArgumentMatcher<Fields>() {
             @Override
-            public boolean matches(final Object argument) {
-                final Fields fields = (Fields) argument;
+            public boolean matches(final Fields fields) {
                 return fields.size() == 2 && fields.get(0).equals("head") && fields.get(1).equals("tail");
             }
         }));

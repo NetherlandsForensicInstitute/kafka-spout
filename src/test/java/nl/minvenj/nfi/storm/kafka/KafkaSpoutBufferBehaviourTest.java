@@ -25,6 +25,7 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.ArgumentCaptor.forClass;
+import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.argThat;
 import static org.mockito.Matchers.eq;
@@ -42,22 +43,21 @@ import java.util.List;
 import java.util.Map;
 import java.util.SortedMap;
 
-import org.apache.storm.spout.RawScheme;
-import org.apache.storm.spout.Scheme;
-import org.apache.storm.spout.SpoutOutputCollector;
-import org.apache.storm.topology.OutputFieldsDeclarer;
-import org.apache.storm.tuple.Fields;
-import org.apache.storm.tuple.Values;
-import org.junit.Before;
-import org.junit.Test;
-import org.mockito.ArgumentCaptor;
-import org.mockito.ArgumentMatcher;
-
 import kafka.consumer.ConsumerIterator;
 import kafka.consumer.ConsumerTimeoutException;
 import kafka.consumer.KafkaStream;
 import kafka.javaapi.consumer.ConsumerConnector;
 import kafka.message.MessageAndMetadata;
+import org.apache.storm.spout.RawScheme;
+import org.apache.storm.spout.Scheme;
+import org.apache.storm.spout.SpoutOutputCollector;
+import org.apache.storm.topology.OutputFieldsDeclarer;
+import org.apache.storm.tuple.Fields;
+import org.junit.Before;
+import org.junit.Test;
+import org.mockito.ArgumentCaptor;
+import org.mockito.ArgumentMatcher;
+
 import nl.minvenj.nfi.storm.kafka.util.ConfigUtils;
 import nl.minvenj.nfi.storm.kafka.util.KafkaMessageId;
 
@@ -123,8 +123,7 @@ public class KafkaSpoutBufferBehaviourTest {
         // verify the spout declares to output single-field tuples
         verify(declarer).declare(argThat(new ArgumentMatcher<Fields>() {
             @Override
-            public boolean matches(final Object argument) {
-                final Fields fields = (Fields) argument;
+            public boolean matches(final Fields fields) {
                 return fields.size() == 1 && fields.get(0).equals("bytes");
             }
         }));
@@ -279,7 +278,7 @@ public class KafkaSpoutBufferBehaviourTest {
         _subject.nextTuple();
         // verify that the buffer is once again empty and the id has been emitted twice
         assertTrue(_subject._queue.isEmpty());
-        verify(_subject._collector, times(2)).emit(any(Values.class), eq(id));
+        verify(_subject._collector, times(2)).emit(anyList(), eq(id));
 
         // verify that a non-KafkaMessageId argument is ignored
         final SortedMap<KafkaMessageId, byte[]> spy = spy(_subject._inProgress);
