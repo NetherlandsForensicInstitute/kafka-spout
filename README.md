@@ -11,11 +11,6 @@ Development
 This implementation was created by the Netherlands Forensic Institute and is still under development.
 Contributions are welcome, please read [the contribution guidelines](./CONTRIBUTING.md).
 
-Java versions
--------------
-Version 0.3 will be the last version to support Java 6.
-Future releases will support Java 7 and 8.
-
 License
 -------
 This work is licensed under the Apache License, Version 2.0.
