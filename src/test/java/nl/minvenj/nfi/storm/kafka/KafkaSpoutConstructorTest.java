@@ -1,3 +1,19 @@
+/**
+ * Copyright 2013 Netherlands Forensic Institute
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package nl.minvenj.nfi.storm.kafka;
 
 import static org.junit.Assert.assertEquals;
@@ -8,6 +24,7 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
+import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -16,11 +33,11 @@ import java.util.Map;
 import org.junit.Test;
 import org.mockito.ArgumentMatcher;
 
-import backtype.storm.spout.Scheme;
-import backtype.storm.spout.SpoutOutputCollector;
-import backtype.storm.task.TopologyContext;
-import backtype.storm.topology.OutputFieldsDeclarer;
-import backtype.storm.tuple.Fields;
+import org.apache.storm.spout.Scheme;
+import org.apache.storm.spout.SpoutOutputCollector;
+import org.apache.storm.task.TopologyContext;
+import org.apache.storm.topology.OutputFieldsDeclarer;
+import org.apache.storm.tuple.Fields;
 import nl.minvenj.nfi.storm.kafka.util.ConfigUtils;
 
 public class KafkaSpoutConstructorTest {
@@ -118,10 +135,13 @@ public class KafkaSpoutConstructorTest {
     public void testDelegateCustomScheme() {
         final Scheme scheme = new Scheme() {
             @Override
-            public List<Object> deserialize(final byte[] bytes) {
+            public List<Object> deserialize(final ByteBuffer bytes) {
+                final byte[] result = new byte[bytes.limit() - 1];
+                bytes.get(result, 1, bytes.limit());
+
                 return Arrays.<Object>asList(
-                    new byte[]{bytes[0]},
-                    Arrays.copyOfRange(bytes, 1, bytes.length)
+                    new byte[]{bytes.get()},
+                    result
                 );
             }
 
