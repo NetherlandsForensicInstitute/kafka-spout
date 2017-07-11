@@ -20,7 +20,7 @@ import nl.minvenj.nfi.storm.kafka.util.KafkaMessageId;
 
 /**
  * {@link FailHandler} implementation making tuple failure reliable: messages are always replayed, calls to
- * {@link #fail(nl.minvenj.nfi.storm.kafka.util.KafkaMessageId, byte[])} will cause an error.
+ * {@link #fail(KafkaMessageId, byte[])} will cause an error.
  *
  * @author Netherlands Forensics Institute
  */

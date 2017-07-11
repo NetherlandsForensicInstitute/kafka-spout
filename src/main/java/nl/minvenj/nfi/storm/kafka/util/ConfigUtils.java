@@ -23,10 +23,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
+import org.apache.storm.Config;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import backtype.storm.Config;
 import nl.minvenj.nfi.storm.kafka.fail.FailHandler;
 import nl.minvenj.nfi.storm.kafka.fail.ReliableFailHandler;
 import nl.minvenj.nfi.storm.kafka.fail.UnreliableFailHandler;
@@ -186,8 +186,8 @@ public class ConfigUtils {
 
     /**
      * Creates a zookeeper connect string usable for the kafka configuration property {@code "zookeeper.connect"} from
-     * storm's configuration map by looking up the {@link backtype.storm.Config#STORM_ZOOKEEPER_SERVERS} and
-     * {@link backtype.storm.Config#STORM_ZOOKEEPER_PORT} values. Returns null when this procedure fails.
+     * storm's configuration map by looking up the {@link org.apache.storm.Config#STORM_ZOOKEEPER_SERVERS} and
+     * {@link org.apache.storm.Config#STORM_ZOOKEEPER_PORT} values. Returns null when this procedure fails.
      *
      * @param stormConfig Storm's configuration map.
      * @return A zookeeper connect string if it can be created from storm's config or null.

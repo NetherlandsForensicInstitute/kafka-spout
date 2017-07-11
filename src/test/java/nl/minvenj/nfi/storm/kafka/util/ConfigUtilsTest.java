@@ -16,6 +16,14 @@
 
 package nl.minvenj.nfi.storm.kafka.util;
 
+import static org.hamcrest.Matchers.containsString;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
 import static nl.minvenj.nfi.storm.kafka.util.ConfigUtils.CONFIG_BUFFER_MAX_MESSAGES;
 import static nl.minvenj.nfi.storm.kafka.util.ConfigUtils.CONFIG_FILE;
 import static nl.minvenj.nfi.storm.kafka.util.ConfigUtils.CONFIG_GROUP;
@@ -32,23 +40,15 @@ import static nl.minvenj.nfi.storm.kafka.util.ConfigUtils.getMaxBufSize;
 import static nl.minvenj.nfi.storm.kafka.util.ConfigUtils.getStormZookeepers;
 import static nl.minvenj.nfi.storm.kafka.util.ConfigUtils.getTopic;
 
-import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 
+import org.apache.storm.Config;
 import org.junit.Test;
 
-import backtype.storm.Config;
 import nl.minvenj.nfi.storm.kafka.fail.AbstractFailHandler;
 import nl.minvenj.nfi.storm.kafka.fail.FailHandler;
 import nl.minvenj.nfi.storm.kafka.fail.ReliableFailHandler;

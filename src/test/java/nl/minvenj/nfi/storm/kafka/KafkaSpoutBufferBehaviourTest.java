@@ -17,12 +17,14 @@
 package nl.minvenj.nfi.storm.kafka;
 
 import static org.hamcrest.Matchers.containsString;
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.mockito.ArgumentCaptor.forClass;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.argThat;
 import static org.mockito.Matchers.eq;
@@ -33,22 +35,24 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
+import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.SortedMap;
 
+import org.apache.storm.spout.RawScheme;
+import org.apache.storm.spout.Scheme;
+import org.apache.storm.spout.SpoutOutputCollector;
+import org.apache.storm.topology.OutputFieldsDeclarer;
+import org.apache.storm.tuple.Fields;
+import org.apache.storm.tuple.Values;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.ArgumentCaptor;
 import org.mockito.ArgumentMatcher;
 
-import backtype.storm.spout.RawScheme;
-import backtype.storm.spout.Scheme;
-import backtype.storm.spout.SpoutOutputCollector;
-import backtype.storm.topology.OutputFieldsDeclarer;
-import backtype.storm.tuple.Fields;
-import backtype.storm.tuple.Values;
 import kafka.consumer.ConsumerIterator;
 import kafka.consumer.ConsumerTimeoutException;
 import kafka.consumer.KafkaStream;
@@ -188,9 +192,14 @@ public class KafkaSpoutBufferBehaviourTest {
         // request to emit message and id
         _subject.nextTuple();
 
+        final ArgumentCaptor<ByteBuffer> bufferCaptor = forClass(ByteBuffer.class);
+        final ArgumentCaptor<List> valuesCaptor = forClass(List.class);
+
         // subject should have emitted a Values object identified by id
-        verify(_subject._serializationScheme).deserialize(eq(message));
-        verify(_subject._collector).emit(eq(new Values(message)), eq(id));
+        verify(_subject._serializationScheme).deserialize(bufferCaptor.capture());
+        assertArrayEquals(message, bufferCaptor.getValue().array());
+        verify(_subject._collector).emit(valuesCaptor.capture(), eq(id));
+        assertArrayEquals(message, (byte[]) valuesCaptor.getValue().get(0));
     }
 
     @Test
@@ -206,8 +215,11 @@ public class KafkaSpoutBufferBehaviourTest {
 
         _subject.nextTuple();
 
+        final ArgumentCaptor<List> captor = forClass(List.class);
+
         // subject should have emitted only the first message
-        verify(_subject._collector).emit(eq(new Values(message1)), eq(id1));
+        verify(_subject._collector).emit(captor.capture(), eq(id1));
+        assertArrayEquals(message1, (byte[]) captor.getValue().get(0));
         verifyNoMoreInteractions(_subject._collector);
     }
 
