@@ -1,3 +1,5 @@
+*This project has been archived and is no longer being maintained.*
+
 [![Build Status (development branch)](https://img.shields.io/travis/HolmesNL/kafka-spout/develop.svg)](https://travis-ci.org/HolmesNL/kafka-spout)
 [![Coverage Status (development branch)](https://img.shields.io/coveralls/HolmesNL/kafka-spout/develop.svg)](https://coveralls.io/r/HolmesNL/kafka-spout?branch=develop)
 
